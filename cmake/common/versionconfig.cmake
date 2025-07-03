@@ -6,6 +6,7 @@
 
 include_guard(GLOBAL)
 
+set(OBS_VERSION_OVERRIDE "29.1.3" CACHE STRING "Override OBS version")
 # Attempt to automatically discover expected OBS version
 if(NOT DEFINED OBS_VERSION_OVERRIDE)
   if(DEFINED RELEASE_CANDIDATE)
