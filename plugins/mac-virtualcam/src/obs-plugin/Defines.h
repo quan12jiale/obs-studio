@@ -19,4 +19,5 @@
 
 #define PLUGIN_NAME "mac-virtualcam"
 
-#define blog(level, msg, ...) blog(level, "[" PLUGIN_NAME "] " msg, ##__VA_ARGS__)
+#define blog(level, msg, ...) \
+	blog(level, "[" PLUGIN_NAME "] " msg, ##__VA_ARGS__)

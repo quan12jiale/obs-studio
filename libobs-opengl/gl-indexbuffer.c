@@ -22,7 +22,8 @@ static inline bool init_ib(struct gs_index_buffer *ib)
 	GLenum usage = ib->dynamic ? GL_DYNAMIC_DRAW : GL_STATIC_DRAW;
 	bool success;
 
-	success = gl_create_buffer(GL_ELEMENT_ARRAY_BUFFER, &ib->buffer, ib->size, ib->data, usage);
+	success = gl_create_buffer(GL_ELEMENT_ARRAY_BUFFER, &ib->buffer,
+				   ib->size, ib->data, usage);
 
 	if (!ib->dynamic) {
 		bfree(ib->data);
@@ -32,7 +33,9 @@ static inline bool init_ib(struct gs_index_buffer *ib)
 	return success;
 }
 
-gs_indexbuffer_t *device_indexbuffer_create(gs_device_t *device, enum gs_index_type type, void *indices, size_t num,
+gs_indexbuffer_t *device_indexbuffer_create(gs_device_t *device,
+					    enum gs_index_type type,
+					    void *indices, size_t num,
 					    uint32_t flags)
 {
 	struct gs_index_buffer *ib = bzalloc(sizeof(struct gs_index_buffer));
@@ -45,7 +48,8 @@ gs_indexbuffer_t *device_indexbuffer_create(gs_device_t *device, enum gs_index_t
 	ib->width = width;
 	ib->size = width * num;
 	ib->type = type;
-	ib->gl_type = type == GS_UNSIGNED_LONG ? GL_UNSIGNED_INT : GL_UNSIGNED_SHORT;
+	ib->gl_type = type == GS_UNSIGNED_LONG ? GL_UNSIGNED_INT
+					       : GL_UNSIGNED_SHORT;
 
 	if (!init_ib(ib)) {
 		blog(LOG_ERROR, "device_indexbuffer_create (GL) failed");
@@ -67,7 +71,8 @@ void gs_indexbuffer_destroy(gs_indexbuffer_t *ib)
 	}
 }
 
-static inline void gs_indexbuffer_flush_internal(gs_indexbuffer_t *ib, const void *data)
+static inline void gs_indexbuffer_flush_internal(gs_indexbuffer_t *ib,
+						 const void *data)
 {
 	if (!ib->dynamic) {
 		blog(LOG_ERROR, "Index buffer is not dynamic");

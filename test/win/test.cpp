@@ -47,7 +47,8 @@ public:
 
 /* --------------------------------------------------- */
 
-static LRESULT CALLBACK sceneProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
+static LRESULT CALLBACK sceneProc(HWND hwnd, UINT message, WPARAM wParam,
+				  LPARAM lParam)
 {
 	switch (message) {
 
@@ -139,8 +140,10 @@ static HWND CreateTestWindow(HINSTANCE instance)
 	if (!RegisterClass(&wc))
 		return 0;
 
-	return CreateWindow(TEXT("bla"), TEXT("bla"), WS_OVERLAPPEDWINDOW | WS_VISIBLE, 1920 / 2 - cx / 2,
-			    1080 / 2 - cy / 2, cx, cy, NULL, NULL, instance, NULL);
+	return CreateWindow(TEXT("bla"), TEXT("bla"),
+			    WS_OVERLAPPEDWINDOW | WS_VISIBLE, 1920 / 2 - cx / 2,
+			    1080 / 2 - cy / 2, cx, cy, NULL, NULL, instance,
+			    NULL);
 }
 
 /* --------------------------------------------------- */
@@ -156,7 +159,8 @@ static void RenderWindow(void *data, uint32_t cx, uint32_t cy)
 
 /* --------------------------------------------------- */
 
-int WINAPI WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, int numCmd)
+int WINAPI WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine,
+		   int numCmd)
 {
 	HWND hwnd = NULL;
 	base_set_log_handler(do_log, nullptr);
@@ -176,13 +180,15 @@ int WINAPI WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, in
 
 		/* ------------------------------------------------------ */
 		/* create source */
-		SourceContext source = obs_source_create("random", "some randon source", NULL, nullptr);
+		SourceContext source = obs_source_create(
+			"random", "some randon source", NULL, nullptr);
 		if (!source)
 			throw "Couldn't create random test source";
 
 		/* ------------------------------------------------------ */
 		/* create filter */
-		SourceContext filter = obs_source_create("test_filter", "a nice green filter", NULL, nullptr);
+		SourceContext filter = obs_source_create(
+			"test_filter", "a nice green filter", NULL, nullptr);
 		if (!filter)
 			throw "Couldn't create test filter";
 		obs_source_filter_add(source, filter);

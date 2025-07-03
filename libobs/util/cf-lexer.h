@@ -58,12 +58,14 @@ static inline void cf_token_clear(struct cf_token *t)
 	memset(t, 0, sizeof(struct cf_token));
 }
 
-static inline void cf_token_copy(struct cf_token *dst, const struct cf_token *src)
+static inline void cf_token_copy(struct cf_token *dst,
+				 const struct cf_token *src)
 {
 	memcpy(dst, src, sizeof(struct cf_token));
 }
 
-static inline void cf_token_add(struct cf_token *dst, const struct cf_token *add)
+static inline void cf_token_add(struct cf_token *dst,
+				const struct cf_token *add)
 {
 	strref_add(&dst->str, &add->str);
 	strref_add(&dst->unmerged_str, &add->unmerged_str);
@@ -98,7 +100,8 @@ static inline struct cf_token *cf_lexer_get_tokens(struct cf_lexer *lex)
 	return lex->tokens.array;
 }
 
-EXPORT bool cf_lexer_lex(struct cf_lexer *lex, const char *str, const char *file);
+EXPORT bool cf_lexer_lex(struct cf_lexer *lex, const char *str,
+			 const char *file);
 
 /* ------------------------------------------------------------------------- */
 /* c-family preprocessor definition */
@@ -128,7 +131,8 @@ static inline void cf_def_addtoken(struct cf_def *cfd, struct cf_token *token)
 	da_push_back(cfd->tokens, token);
 }
 
-static inline struct cf_token *cf_def_getparam(const struct cf_def *cfd, size_t idx)
+static inline struct cf_token *cf_def_getparam(const struct cf_def *cfd,
+					       size_t idx)
 {
 	return cfd->params.array + idx;
 }
@@ -177,19 +181,25 @@ struct cf_preprocessor {
 EXPORT void cf_preprocessor_init(struct cf_preprocessor *pp);
 EXPORT void cf_preprocessor_free(struct cf_preprocessor *pp);
 
-EXPORT bool cf_preprocess(struct cf_preprocessor *pp, struct cf_lexer *lex, struct error_data *ed);
+EXPORT bool cf_preprocess(struct cf_preprocessor *pp, struct cf_lexer *lex,
+			  struct error_data *ed);
 
-static inline void cf_preprocessor_add_sys_include_dir(struct cf_preprocessor *pp, const char *include_dir)
+static inline void
+cf_preprocessor_add_sys_include_dir(struct cf_preprocessor *pp,
+				    const char *include_dir)
 {
 	char *str = bstrdup(include_dir);
 	if (include_dir)
 		da_push_back(pp->sys_include_dirs, &str);
 }
 
-EXPORT void cf_preprocessor_add_def(struct cf_preprocessor *pp, struct cf_def *def);
-EXPORT void cf_preprocessor_remove_def(struct cf_preprocessor *pp, const char *def_name);
+EXPORT void cf_preprocessor_add_def(struct cf_preprocessor *pp,
+				    struct cf_def *def);
+EXPORT void cf_preprocessor_remove_def(struct cf_preprocessor *pp,
+				       const char *def_name);
 
-static inline struct cf_token *cf_preprocessor_get_tokens(struct cf_preprocessor *pp)
+static inline struct cf_token *
+cf_preprocessor_get_tokens(struct cf_preprocessor *pp)
 {
 	return pp->tokens.array;
 }

@@ -1,63 +1,69 @@
 {
     "dependencies": {
         "prebuilt": {
-            "version": "2025-05-23",
+            "version": "2023-06-22",
             "baseUrl": "https://github.com/obsproject/obs-deps/releases/download",
             "label": "Pre-Built obs-deps",
             "hashes": {
-                "macos-universal": "7b1448581b92c6f8d4e2f9b1b10eb318ebfc4df7255638e05bacb49b620e190d",
-                "windows-x64": "88dc7bab50542b4b58194cdd5d7e6f4b73cde7c0d1ee7a040a6d9c9df05187b1",
-                "windows-x86": "f6d01c7c31f14cb245803963a2f9af42b01b63f9baadf6259e56843d94eae8c4",
-                "windows-arm64": "43520957736d332b0a545c320db7087762e394ef78243d72769fb59794e00913"
+                "macos-universal": "a0d2e03f0ea79681634c31627430a220d9b62113d6ff58174d0bdab6fafdd32b",
+                "windows-x64": "1b12e86e2d62a97a889866d66b95fe47ddc6f7fa9b13e88aedfab4ea9e298ea2",
+                "windows-x86": "8c6bfda01ec7d38a50a61ac4954dc00d6fcb171830a7f32593c5bd20a44be3a9",
+                "linux-x86_64": "1b82ab4247bc2730ae84caa5a009e76637eac77b05bfb4b4a2bae610e7a75262"
             }
         },
         "qt6": {
-            "version": "2025-05-23",
+            "version": "2023-06-22",
             "baseUrl": "https://github.com/obsproject/obs-deps/releases/download",
             "label": "Pre-Built Qt6",
             "hashes": {
-                "macos-universal": "d4945fe719d31d353dc76298f58823d7891126e33af5029f763427ea9f80bfaa",
-                "windows-x64": "bd80383dc799c0bba2f7fae793613b3fbd2cc3a3712b3d3b63b490721d187d9e",
-                "windows-arm64": "35a06786c460031571134f0e2ba288a9dce4ddf044686f6af48fae52728d1796"
+                "macos-universal": "f890d258a1afa7ba409b79c8ee55d53155e5c72105b8b18a3f52047ee70fc0aa",
+                "windows-x64": "1907fbcbcef69527154b29316c425b0885afb77ad69a9a2af7a1471d79512195"
             },
             "debugSymbols": {
-                "windows-x64": "9c9a15c5dbe59eb6a1c31c06b7208f3c4403671fbdfaef341cac3beb7af24ea1",
-                "windows-arm64": "a6229cc9e5e08a22921b1fa8fb10fc6e36e88f692fa2e6921c1b61b7a3161c81"
+                "windows-x64": "b461a7ade0c099505baea857fa5b98c4f8e9b702681be019ea354735d062e065"
             }
         },
         "cef": {
-            "version": "6533",
+            "version": "5060",
             "baseUrl": "https://cdn-fastly.obsproject.com/downloads",
             "label": "Chromium Embedded Framework",
             "hashes": {
-                "macos-x86_64": "94ff9dffd60a83a3cd30851eb5b55c1c8d00e7626bd2b8b22d332fc013643105",
-                "macos-arm64": "7c6c1c3706e08f470fb09c57bcfa49e760ba4a00dc59467e8c2c0d83bc99f0d5",
-                "ubuntu-x86_64": "cb7225c7a937ac4cdc9c41700061f45cccc640d696902357782e57f8250bf43a",
-                "ubuntu-aarch64": "e82388ef61776a88701b37d96e44f65dcc91f4d4f205f4f17cdc0d50f4e6a7a7",
-                "windows-x64": "922efbda1f2f8be9e5b2754d878a14d90afc81f04e94fc9101a7513e2b5cecc1",
-                "windows-arm64": "df9df4bd85826b4c071c6db404fd59cf93efd9c58ec3ab64e204466ae19bb02a"
+                "macos-x86_64": "7ef71717ff2e4ff4212274c33f0993729f47c109c464e499544fd3f63586a069",
+                "macos-arm64": "a9da8909202aefc8f35509d03eff9a7c837b5d3b2ed3afb39b67121cb16d457b",
+                "linux-x86_64": "bf4aa9388bab7e94fa945cc3bba16b6da63b6a30f9c0342d42235468b39d84bf",
+                "linux-aarch64": "68d915c9ba2639cba762a54cd3430fce2527aa6355d831d3cfcb6157664206b0",
+                "windows-x64": "c1b47beb7ee42e98f1a41b6d694c26842a4a3d452e44bdf6f758c9785696533d"
             },
             "revision": {
-                "macos-x86_64": 4,
-                "macos-arm64": 4,
-                "ubuntu-x86_64": 3,
-                "ubuntu-aarch64": 4,
-                "windows-x64": 2
+                "macos-x86_64": 2,
+                "macos-arm64": 2
             }
         }
     },
     "tools": {
         "sparkle": {
-            "version": "2.6.4",
+            "version": "2.3.2",
             "baseUrl": "https://github.com/sparkle-project/Sparkle/releases/download",
             "label": "Sparkle 2",
-            "hash": "50612a06038abc931f16011d7903b8326a362c1074dabccb718404ce8e585f0b"
+            "hash": "2b3fe6918ca20a83729aad34f8f693a678b714a17d33b5f13ca2d25edfa7eed3"
         },
         "ccache-win": {
             "version": "4.8.1",
             "baseUrl": "https://github.com/ccache/ccache/releases/download/",
             "label": "Ccache for Windows x64",
             "hash": "ca59770e9f46b59d6bec6e7036a17a27d601a0a5a0a721fe8e03fea734ccf732"
+        }
+    },
+    "platformConfig": {
+        "macos-universal": {
+            "qtVersion": 6
+        },
+        "windows-x64": {
+            "qtVersion": 6
+        },
+        "linux-x86_64": {
+            "qtVersion": 6,
+            "generator": "Ninja"
         }
     },
     "name": "obs-studio"

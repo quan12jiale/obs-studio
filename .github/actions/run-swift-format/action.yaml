@@ -20,15 +20,8 @@ runs:
         echo "::notice::run-swift-format action requires a macOS-based or Linux-based runner."
         exit 2
 
-    - name: Check for Changed Files ✅
-      uses: ./.github/actions/check-changes
-      id: checks
-      with:
-        checkGlob: "'*.swift'"
-        diffFilter: 'ACM'
-
     - name: Install Dependencies 🛍️
-      if: runner.os == 'Linux' && fromJSON(steps.checks.outputs.hasChangedFiles)
+      if: runner.os == 'Linux'
       shell: bash
       run: |
         : Install Dependencies 🛍️
@@ -39,21 +32,29 @@ runs:
         echo ::endgroup::
 
     - name: Run swift-format 🔥
-      if: fromJSON(steps.checks.outputs.hasChangedFiles)
       id: result
       shell: zsh --no-rcs --errexit --pipefail {0}
       working-directory: ${{ github.workspace }}
       env:
-        CHANGED_FILES: ${{ steps.checks.outputs.changedFiles }}
+        GITHUB_EVENT_FORCED: ${{ github.event.forced }}
+        GITHUB_REF_BEFORE: ${{ github.event.before }}
       run: |
         : Run swift-format 🔥
         if (( ${+RUNNER_DEBUG} )) setopt XTRACE
 
-        print ::group::Install swift-format
-        brew install --quiet swift-format
-        print ::endgroup::
+        local -a changes=($(git diff --name-only HEAD~1 HEAD))
+        case ${GITHUB_EVENT_NAME} {
+          pull_request) changes=($(git diff --name-only origin/${GITHUB_BASE_REF} HEAD)) ;;
+          push) if [[ ${GITHUB_EVENT_FORCED} != true ]] changes=($(git diff --name-only ${GITHUB_REF_BEFORE} HEAD)) ;;
+          *) ;;
+        }
 
-        print ::group::Run swift-format
-        local -a changes=(${(s:,:)CHANGED_FILES//[\[\]\'\"]/})
-        ./build-aux/run-swift-format --fail-${{ inputs.failCondition }} --check ${changes}
-        print ::endgroup::
+        if (( ${changes[(I)*.swift]} )) {
+          print ::group::Install swift-format
+          brew install --quiet swift-format
+          print ::endgroup::
+
+          print ::group::Run swift-format
+          ./build-aux/run-swift-format --fail-${{ inputs.failCondition }} --check
+          print ::endgroup::
+        }

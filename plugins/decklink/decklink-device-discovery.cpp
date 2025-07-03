@@ -54,7 +54,8 @@ DeckLinkDevice *DeckLinkDeviceDiscovery::FindByHash(const char *hash)
 	return ret;
 }
 
-HRESULT STDMETHODCALLTYPE DeckLinkDeviceDiscovery::DeckLinkDeviceArrived(IDeckLink *device)
+HRESULT STDMETHODCALLTYPE
+DeckLinkDeviceDiscovery::DeckLinkDeviceArrived(IDeckLink *device)
 {
 	DeckLinkDevice *newDev = new DeckLinkDevice(device);
 	if (!newDev->Init()) {
@@ -72,7 +73,8 @@ HRESULT STDMETHODCALLTYPE DeckLinkDeviceDiscovery::DeckLinkDeviceArrived(IDeckLi
 	return S_OK;
 }
 
-HRESULT STDMETHODCALLTYPE DeckLinkDeviceDiscovery::DeckLinkDeviceRemoved(IDeckLink *device)
+HRESULT STDMETHODCALLTYPE
+DeckLinkDeviceDiscovery::DeckLinkDeviceRemoved(IDeckLink *device)
 {
 	std::lock_guard<std::recursive_mutex> lock(deviceMutex);
 
@@ -95,7 +97,8 @@ ULONG STDMETHODCALLTYPE DeckLinkDeviceDiscovery::AddRef(void)
 	return os_atomic_inc_long(&refCount);
 }
 
-HRESULT STDMETHODCALLTYPE DeckLinkDeviceDiscovery::QueryInterface(REFIID iid, LPVOID *ppv)
+HRESULT STDMETHODCALLTYPE DeckLinkDeviceDiscovery::QueryInterface(REFIID iid,
+								  LPVOID *ppv)
 {
 	HRESULT result = E_NOINTERFACE;
 
@@ -106,7 +109,8 @@ HRESULT STDMETHODCALLTYPE DeckLinkDeviceDiscovery::QueryInterface(REFIID iid, LP
 		*ppv = this;
 		AddRef();
 		result = S_OK;
-	} else if (memcmp(&iid, &IID_IDeckLinkDeviceNotificationCallback, sizeof(REFIID)) == 0) {
+	} else if (memcmp(&iid, &IID_IDeckLinkDeviceNotificationCallback,
+			  sizeof(REFIID)) == 0) {
 		*ppv = (IDeckLinkDeviceNotificationCallback *)this;
 		AddRef();
 		result = S_OK;

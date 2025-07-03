@@ -1,4 +1,4 @@
-name: Pull
+name: Pull Request
 run-name: ${{ github.event.pull_request.title }} pull request run 🚀
 on:
   workflow_dispatch:
@@ -14,26 +14,26 @@ concurrency:
   cancel-in-progress: true
 jobs:
   check-format:
-    name: Format 🔍
+    name: Check Formatting 🔍
     uses: ./.github/workflows/check-format.yaml
     permissions:
       contents: read
 
   build-project:
-    name: Build 🧱
+    name: Build Project 🧱
     uses: ./.github/workflows/build-project.yaml
     secrets: inherit
     permissions:
       contents: read
 
   compatibility-validation:
-    name: Validate Compatibility 🕵️
+    name: Validate Compatibility Data 🕵️
     if: github.base_ref == 'master'
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-22.04
     permissions:
       checks: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v3
         with:
           fetch-depth: 0
 
@@ -49,13 +49,13 @@ jobs:
         uses: ./.github/actions/compatibility-validator
 
   services-validation:
-    name: Validate Services 🕵️
+    name: Validate Services Data 🕵️
     if: github.base_ref == 'master'
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-22.04
     permissions:
       checks: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v3
         with:
           fetch-depth: 0
 
@@ -77,9 +77,9 @@ jobs:
   update-documentation:
     name: Update Documentation 📖
     if: github.repository_owner == 'obsproject' && github.base_ref == 'master'
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v3
         with:
           fetch-depth: 0
 

@@ -6,7 +6,8 @@
  * it's nearest neighbor so not really a huge deal.  at the very least it
  * should be sse2 at some point. */
 
-void nv12_scale_init(nv12_scale_t *s, enum target_format format, int dst_cx, int dst_cy, int src_cx, int src_cy)
+void nv12_scale_init(nv12_scale_t *s, enum target_format format, int dst_cx,
+		     int dst_cy, int src_cx, int src_cy)
 {
 	s->format = format;
 
@@ -17,7 +18,8 @@ void nv12_scale_init(nv12_scale_t *s, enum target_format format, int dst_cx, int
 	s->dst_cy = dst_cy;
 }
 
-static void nv12_scale_nearest(nv12_scale_t *s, uint8_t *dst_start, const uint8_t *src)
+static void nv12_scale_nearest(nv12_scale_t *s, uint8_t *dst_start,
+			       const uint8_t *src)
 {
 	register uint8_t *dst = dst_start;
 	const int src_cx = s->src_cx;
@@ -55,7 +57,8 @@ static void nv12_scale_nearest(nv12_scale_t *s, uint8_t *dst_start, const uint8_
 	}
 }
 
-static void nv12_scale_nearest_to_i420(nv12_scale_t *s, uint8_t *dst_start, const uint8_t *src)
+static void nv12_scale_nearest_to_i420(nv12_scale_t *s, uint8_t *dst_start,
+				       const uint8_t *src)
 {
 	register uint8_t *dst = dst_start;
 	const int src_cx = s->src_cx;
@@ -96,7 +99,8 @@ static void nv12_scale_nearest_to_i420(nv12_scale_t *s, uint8_t *dst_start, cons
 	}
 }
 
-static void nv12_convert_to_i420(nv12_scale_t *s, uint8_t *dst_start, const uint8_t *src_start)
+static void nv12_convert_to_i420(nv12_scale_t *s, uint8_t *dst_start,
+				 const uint8_t *src_start)
 {
 	const int size = s->src_cx * s->src_cy;
 	const int size_d4 = size / 4;
@@ -114,7 +118,8 @@ static void nv12_convert_to_i420(nv12_scale_t *s, uint8_t *dst_start, const uint
 	}
 }
 
-static void nv12_scale_nearest_to_yuy2(nv12_scale_t *s, uint8_t *dst_start, const uint8_t *src)
+static void nv12_scale_nearest_to_yuy2(nv12_scale_t *s, uint8_t *dst_start,
+				       const uint8_t *src)
 {
 	register uint8_t *dst = dst_start;
 	const int src_cx = s->src_cx;
@@ -133,7 +138,8 @@ static void nv12_scale_nearest_to_yuy2(nv12_scale_t *s, uint8_t *dst_start, cons
 
 	for (int y = 0; y < dst_cy; y++) {
 		const int src_line = y * src_cy / dst_cy * s->src_cx;
-		const int src_line_d2 = y / 2 * src_cy_d2 / dst_cy_d2 * s->src_cx;
+		const int src_line_d2 =
+			y / 2 * src_cy_d2 / dst_cy_d2 * s->src_cx;
 
 		for (int x = 0; x < dst_cx; x++) {
 			const int src_x = x * src_cx / dst_cx;
@@ -149,10 +155,11 @@ static void nv12_scale_nearest_to_yuy2(nv12_scale_t *s, uint8_t *dst_start, cons
 	}
 }
 
-static void nv12_convert_to_yuy2(nv12_scale_t *s, uint8_t *dst_start, const uint8_t *src_start)
+static void nv12_convert_to_yuy2(nv12_scale_t *s, uint8_t *dst_start,
+				 const uint8_t *src_start)
 {
 	const int size = s->src_cx * s->src_cy;
-	const int size_dst_line = s->src_cx * 2;
+	const int size_dst_line = s->src_cx * 4;
 
 	register const uint8_t *src_y = src_start;
 	register const uint8_t *src_uv = src_y + size;

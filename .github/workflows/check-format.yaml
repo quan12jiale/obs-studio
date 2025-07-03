@@ -3,9 +3,9 @@ on:
   workflow_call:
 jobs:
   clang-format:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v3
         with:
           fetch-depth: 0
       - name: clang-format Check 🐉
@@ -15,9 +15,9 @@ jobs:
           failCondition: error
 
   swift-format:
-    runs-on: macos-15
+    runs-on: macos-13
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v3
         with:
           fetch-depth: 0
       - name: swift-format Check 🔥
@@ -26,22 +26,22 @@ jobs:
         with:
           failCondition: error
 
-  gersemi:
-    runs-on: ubuntu-24.04
+  cmake-format:
+    runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v3
         with:
           fetch-depth: 0
-      - name: gersemi Check 🎛️
-        id: gersemi
-        uses: ./.github/actions/run-gersemi
+      - name: cmake-format Check 🎛️
+        id: cmake-format
+        uses: ./.github/actions/run-cmake-format
         with:
           failCondition: error
 
   flatpak-validator:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v3
         with:
           fetch-depth: 0
       - name: Flatpak Manifest Check 📦
@@ -51,9 +51,9 @@ jobs:
           failCondition: error
 
   qt-xml-validator:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v3
         with:
           fetch-depth: 0
       - name: Qt XML Check 🖼️

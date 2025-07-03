@@ -25,23 +25,15 @@
         {
             "type": "git",
             "url": "https://github.com/FFmpeg/FFmpeg.git",
-            "tag": "n7.1.1",
-            "commit": "db69d06eeeab4f46da15030a80d539efb4503ca8",
+            "commit": "a6dc92968a325d331bb6dcf9b3b2248026cd1d6c",
             "disable-shallow-clone": true
         },
         {
             "type": "git",
             "dest": "obs-deps",
             "url": "https://github.com/obsproject/obs-deps.git",
-            "tag": "2024-09-05",
-            "commit": "45b7d2cfac0e2ac256d458c7466a925b0a94de35"
-        },
-        {
-            "type": "patch",
-            "paths": [
-                "patches/ffmpeg/0001-lavc-vaapi_encode-Query-surface-alignment.patch",
-                "patches/ffmpeg/0002-lavc-vaapi_encode_h265-Use-surface-alignment.patch"
-            ]
+            "tag": "2023-06-22",
+            "commit": "d86fb6f86455d328f67e563d87f494bcf1ff6dca"
         },
         {
             "type": "shell",

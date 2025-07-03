@@ -54,11 +54,9 @@ Coding Guidelines
 - Tabs for indentation, spaces for alignment.  Tabs are treated as 8
   columns wide.
 
-- 120 columns max
+- 80 columns max
 
 - Comments and names of variables/functions/etc. must be in English
-
-- Formatting scripts (macOS/Linux only) are available `here <./build-aux>`__
 
 Commit Guidelines
 -----------------

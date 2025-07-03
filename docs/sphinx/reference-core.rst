@@ -198,7 +198,7 @@ Initialization, Shutdown, and Information
 
 ---------------------
 
-.. function:: void obs_set_video_levels(float sdr_white_level, float hdr_nominal_peak_level)
+.. function:: void obs_set_video_sdr_white_level(float sdr_white_level, float hdr_nominal_peak_level)
 
    Sets the current video levels.
 
@@ -324,19 +324,6 @@ Libobs Objects
 
 ---------------------
 
-.. function:: void obs_enum_canvases(bool (*enum_proc)(void*, obs_canvas_t*), void *param)
-
-   Enumerates canvases.
-
-   Callback function returns true to continue enumeration, or false to end
-   enumeration.
-
-   Use :c:func:`obs_canvas_get_ref()` or
-   :c:func:`obs_canvas_get_weak_encoder()` if you want to retain a
-   reference after obs_enum_canvases finishes.
-
----------------------
-
 .. function:: obs_source_t *obs_get_source_by_name(const char *name)
 
    Gets a source by its name.
@@ -364,9 +351,6 @@ Libobs Objects
    Increments the source reference counter, use
    :c:func:`obs_source_release()` to release it when complete.
 
-   .. deprecated:: 31.1
-      Use :c:func:`obs_frontend_get_transitions` from the Frontend API or :c:func:`obs_get_source_by_uuid` instead.
-
 ---------------------
 
 .. function:: obs_source_t *obs_get_transition_by_uuid(const char *uuid)
@@ -377,9 +361,6 @@ Libobs Objects
    :c:func:`obs_source_release()` to release it when complete.
 
    .. versionadded:: 29.1
-
-   .. deprecated:: 31.1
-      Use :c:func:`obs_get_source_by_uuid` instead.
 
 ---------------------
 
@@ -416,24 +397,6 @@ Libobs Objects
 
    Increments the service reference counter, use
    :c:func:`obs_service_release()` to release it when complete.
-
----------------------
-
-.. function:: obs_canvas_t *obs_get_canvas_by_name(const char *name)
-
-   Get a canvas by its name.
-   
-   Increments the canvas reference counter, use
-   :c:func:`obs_canvas_release()` to release it when complete.
-
----------------------
-
-.. function:: obs_canvas_t *obs_get_canvas_by_uuid(const char *uuid)
-
-   Get a canvas by its UUID.
-
-   Increments the canvas reference counter, use
-   :c:func:`obs_canvas_release()` to release it when complete.
 
 ---------------------
 
@@ -538,6 +501,14 @@ Video, Audio, and Graphics
 
 ---------------------
 
+.. function:: void obs_render_main_view(void)
+
+   Renders the main view.
+
+   Note: This function is deprecated.
+
+---------------------
+
 .. function:: void obs_render_main_texture(void)
 
    Renders the main output texture.  Useful for rendering a preview pane
@@ -545,17 +516,27 @@ Video, Audio, and Graphics
 
 ---------------------
 
-.. function:: bool obs_audio_monitoring_available(void)
+.. function:: void obs_set_master_volume(float volume)
 
-   :return: Whether audio monitoring is supported and available on the current platform
+   No-op, only exists to keep ABI compatibility.
+
+   .. deprecated:: 29.0
 
 ---------------------
 
-.. function:: void obs_reset_audio_monitoring(void)
+.. function:: float obs_get_master_volume(void)
 
-   Resets all audio monitoring devices.
+   No-op, only exists to keep ABI compatibility.
 
-   .. versionadded:: 30.1
+   :return: Always returns 1
+
+   .. deprecated:: 29.0
+
+---------------------
+
+.. function:: bool obs_audio_monitoring_available(void)
+
+   :return: Whether audio monitoring is supported and available on the current platform
 
 ---------------------
 
@@ -707,22 +688,6 @@ Core OBS Signals
 
    Called when a source's volume has changed.
 
-**source_audio_activate** (ptr source)
-
-   Called when a source's audio becomes active.
-
-**source_audio_deactivate** (ptr source)
-
-   Called when a source's audio becomes inactive.
-
-**source_filter_add** (ptr source, ptr filter)
-
-   Called when a filter is added to a source.
-
-**source_filter_remove** (ptr source, ptr filter)
-
-   Called when a filter is removed from a source.
-
 **source_transition_start** (ptr source)
 
    Called when a transition has started its transition.
@@ -754,31 +719,6 @@ Core OBS Signals
 **hotkey_bindings_changed** (ptr hotkey)
 
    Called when a hotkey's bindings has changed.
-
-**canvas_create** (ptr canvas)
-
-   Called when a new public canvas has been created.
-
-**canvas_remove** (ptr canvas)
-
-   Called when the :c:func:`obs_canvas_remove()` function is called on a public canvas.
-
-**canvas_destroy** (ptr canvas)
-
-   Called when a public canvas is about to be destroyed.
-
-**canvas_video_reset** (ptr canvas)
-
-   Called when a public canvas's video mix has been reset after a call to
-   :c:func:`obs_reset_video()` or :c:func:`obs_canvas_reset_video()`.
-
-**canvas_rename** (ptr canvas, string new_name, string prev_name)
-
-   Called when a public canvas has been renamed.
-
-**video_reset** ()
-
-   Called when a the main OBS video has been reset.
 
 ---------------------
 
@@ -949,16 +889,6 @@ Views
 
 .. function:: bool obs_view_get_video_info(obs_view_t *view, struct obs_video_info *ovi)
 
-   Gets the video settings of the first matching mix currently in use for this view context.
+   Gets the video settings currently in use for this view context.
 
    :return: *false* if no video
-
-   .. deprecated:: 3X.X
-
----------------------
-
-.. function:: void obs_view_enum_video_info(obs_view_t *view, bool (*enum_proc)(void *, struct obs_video_info *), void *param)
-
-   Enumerates all the video info of all mixes that use the specified mix.
-
-   .. versionadded:: 30.1

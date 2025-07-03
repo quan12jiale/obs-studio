@@ -32,11 +32,19 @@ bool obs_module_load(void)
 {
 	obs_register_source(&v4l2_input);
 
+	obs_data_t *obs_settings = obs_data_create();
+
 	if (loopback_module_available()) {
 		obs_register_output(&virtualcam_info);
+		obs_data_set_bool(obs_settings, "vcamEnabled", true);
 	} else {
-		blog(LOG_WARNING, "v4l2loopback not installed, virtual camera not registered");
+		obs_data_set_bool(obs_settings, "vcamEnabled", false);
+		blog(LOG_WARNING,
+		     "v4l2loopback not installed, virtual camera disabled");
 	}
+
+	obs_apply_private_data(obs_settings);
+	obs_data_release(obs_settings);
 
 	return true;
 }

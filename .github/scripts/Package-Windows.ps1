@@ -1,9 +1,10 @@
 [CmdletBinding()]
 param(
-    [ValidateSet('x64', 'arm64')]
+    [ValidateSet('x64')]
     [string] $Target = 'x64',
     [ValidateSet('Debug', 'RelWithDebInfo', 'Release', 'MinSizeRel')]
-    [string] $Configuration = 'RelWithDebInfo'
+    [string] $Configuration = 'RelWithDebInfo',
+    [switch] $SkipDeps
 )
 
 $ErrorActionPreference = 'Stop'
@@ -11,10 +12,6 @@ $ErrorActionPreference = 'Stop'
 if ( $DebugPreference -eq 'Continue' ) {
     $VerbosePreference = 'Continue'
     $InformationPreference = 'Continue'
-}
-
-if ( $env:CI -eq $null ) {
-    throw "Package-Windows.ps1 requires CI environment"
 }
 
 if ( ! ( [System.Environment]::Is64BitOperatingSystem ) ) {
@@ -43,7 +40,9 @@ function Package {
         . $Utility.FullName
     }
 
-    Install-BuildDependencies -WingetFile "${ScriptHome}/.Wingetfile"
+    if ( ! $SkipDeps ) {
+        Install-BuildDependencies -WingetFile "${ScriptHome}/.Wingetfile"
+    }
 
     $GitDescription = Invoke-External git describe --tags --long
     $Tokens = ($GitDescription -split '-')
@@ -61,7 +60,7 @@ function Package {
         '-C', "${Configuration}"
     )
 
-    if ( $DebugPreference -eq 'Continue' ) {
+    if ( $VerbosePreference -eq 'Continue' ) {
         $CpackArgs += ('--verbose')
     }
 
@@ -71,8 +70,8 @@ function Package {
 
     cpack @CpackArgs
 
-    $Package = Get-ChildItem -filter "obs-studio-*-windows-${Target}.zip" -File
-    Move-Item -Path $Package -Destination "${OutputName}-windows-${Target}.zip"
+    $Package = Get-ChildItem -filter "obs-studio-*-windows-x64.zip" -File
+    Move-Item -Path $Package -Destination "${OutputName}-windows-x64.zip"
 
     Pop-Location -Stack PackageTemp
 }

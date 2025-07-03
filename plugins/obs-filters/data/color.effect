@@ -10,7 +10,7 @@ float3 srgb_linear_to_nonlinear(float3 v)
 
 float srgb_nonlinear_to_linear_channel(float u)
 {
-	return (u <= 0.04045) ? (u / 12.92) : pow(mad(u, 1. / 1.055, .055 / 1.055), 2.4);
+	return (u <= 0.04045) ? (u / 12.92) : pow((u + 0.055) / 1.055, 2.4);
 }
 
 float3 srgb_nonlinear_to_linear(float3 v)
@@ -37,7 +37,6 @@ float3 rec2020_to_rec709(float3 v)
 float3 reinhard(float3 rgb)
 {
 	rgb /= rgb + float3(1., 1., 1.);
-	rgb = saturate(rgb);
 	rgb = pow(rgb, float3(1. / 2.4, 1. / 2.4, 1. / 2.4));
 	rgb = srgb_nonlinear_to_linear(rgb);
 	return rgb;

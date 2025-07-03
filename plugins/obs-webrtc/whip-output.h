@@ -11,7 +11,7 @@
 #include <mutex>
 #include <thread>
 
-#include <rtc/rtc.hpp>
+#include <rtc/rtc.h>
 
 class WHIPOutput {
 public:
@@ -27,18 +27,18 @@ public:
 	inline int GetConnectTime() { return connect_time_ms; }
 
 private:
-	void ConfigureAudioTrack(std::string media_stream_id, std::string cname);
-	void ConfigureVideoTrack(std::string media_stream_id, std::string cname);
+	void ConfigureAudioTrack(std::string media_stream_id,
+				 std::string cname);
+	void ConfigureVideoTrack(std::string media_stream_id,
+				 std::string cname);
 	bool Init();
 	bool Setup();
 	bool Connect();
 	void StartThread();
 	void SendDelete();
 	void StopThread(bool signal);
-	void ParseLinkHeader(std::string linkHeader, std::vector<rtc::IceServer> &iceServers);
 
-	void Send(void *data, uintptr_t size, uint64_t duration, std::shared_ptr<rtc::Track> track,
-		  std::shared_ptr<rtc::RtcpSrReporter> rtcp_sr_reporter);
+	void Send(void *data, uintptr_t size, uint64_t duration, int track);
 
 	obs_output_t *output;
 
@@ -52,11 +52,9 @@ private:
 	std::thread start_stop_thread;
 
 	uint32_t base_ssrc;
-	std::shared_ptr<rtc::PeerConnection> peer_connection;
-	std::shared_ptr<rtc::Track> audio_track;
-	std::shared_ptr<rtc::Track> video_track;
-	std::shared_ptr<rtc::RtcpSrReporter> audio_sr_reporter;
-	std::shared_ptr<rtc::RtcpSrReporter> video_sr_reporter;
+	int peer_connection;
+	int audio_track;
+	int video_track;
 
 	std::atomic<size_t> total_bytes_sent;
 	std::atomic<int> connect_time_ms;

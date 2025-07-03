@@ -50,7 +50,8 @@ static inline void axisang_copy(struct axisang *dst, struct axisang *aa)
 	dst->w = aa->w;
 }
 
-static inline void axisang_set(struct axisang *dst, float x, float y, float z, float w)
+static inline void axisang_set(struct axisang *dst, float x, float y, float z,
+			       float w)
 {
 	dst->x = x;
 	dst->y = y;

@@ -54,7 +54,8 @@ struct gl_shader_parser {
 	DARRAY(struct gl_parser_attrib) attribs;
 };
 
-static inline void gl_shader_parser_init(struct gl_shader_parser *glsp, enum gs_shader_type type)
+static inline void gl_shader_parser_init(struct gl_shader_parser *glsp,
+					 enum gs_shader_type type)
 {
 	glsp->type = type;
 
@@ -85,4 +86,5 @@ static inline void gl_shader_parser_free(struct gl_shader_parser *glsp)
 	shader_parser_free(&glsp->parser);
 }
 
-extern bool gl_shader_parse(struct gl_shader_parser *glsp, const char *shader_str, const char *file);
+extern bool gl_shader_parse(struct gl_shader_parser *glsp,
+			    const char *shader_str, const char *file);

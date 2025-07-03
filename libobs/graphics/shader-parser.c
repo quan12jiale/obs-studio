@@ -53,10 +53,12 @@ enum gs_sample_filter get_sample_filter(const char *filter)
 	if (astrcmpi(filter, "Anisotropy") == 0)
 		return GS_FILTER_ANISOTROPIC;
 
-	else if (astrcmpi(filter, "Point") == 0 || strcmp(filter, "MIN_MAG_MIP_POINT") == 0)
+	else if (astrcmpi(filter, "Point") == 0 ||
+		 strcmp(filter, "MIN_MAG_MIP_POINT") == 0)
 		return GS_FILTER_POINT;
 
-	else if (astrcmpi(filter, "Linear") == 0 || strcmp(filter, "MIN_MAG_MIP_LINEAR") == 0)
+	else if (astrcmpi(filter, "Linear") == 0 ||
+		 strcmp(filter, "MIN_MAG_MIP_LINEAR") == 0)
 		return GS_FILTER_LINEAR;
 
 	else if (strcmp(filter, "MIN_MAG_POINT_MIP_LINEAR") == 0)
@@ -96,7 +98,8 @@ extern enum gs_address_mode get_address_mode(const char *mode)
 	return GS_ADDRESS_CLAMP;
 }
 
-void shader_sampler_convert(struct shader_sampler *ss, struct gs_sampler_info *info)
+void shader_sampler_convert(struct shader_sampler *ss,
+			    struct gs_sampler_info *info)
 {
 	size_t i;
 	memset(info, 0, sizeof(struct gs_sampler_info));
@@ -124,7 +127,8 @@ void shader_sampler_convert(struct shader_sampler *ss, struct gs_sampler_info *i
 
 /* ------------------------------------------------------------------------- */
 
-static int sp_parse_sampler_state_item(struct shader_parser *sp, struct shader_sampler *ss)
+static int sp_parse_sampler_state_item(struct shader_parser *sp,
+				       struct shader_sampler *ss)
 {
 	int ret;
 	char *state = NULL, *value = NULL;
@@ -190,7 +194,8 @@ error:
 	shader_sampler_free(&ss);
 }
 
-static inline int sp_parse_struct_var(struct shader_parser *sp, struct shader_var *var)
+static inline int sp_parse_struct_var(struct shader_parser *sp,
+				      struct shader_var *var)
 {
 	int code;
 
@@ -243,7 +248,8 @@ static inline int sp_parse_struct_var(struct shader_parser *sp, struct shader_va
 		if (cf_token_is(&sp->cfp, "}"))
 			return PARSE_UNEXPECTED_BREAK;
 
-		code = cf_token_is_type(&sp->cfp, CFTOKEN_NAME, "mapping name", ";");
+		code = cf_token_is_type(&sp->cfp, CFTOKEN_NAME, "mapping name",
+					";");
 		if (code != PARSE_SUCCESS)
 			return code;
 
@@ -319,7 +325,8 @@ error:
 	shader_struct_free(&ss);
 }
 
-static inline int sp_check_for_keyword(struct shader_parser *sp, const char *keyword, bool *val)
+static inline int sp_check_for_keyword(struct shader_parser *sp,
+				       const char *keyword, bool *val)
 {
 	bool new_val = cf_token_is(&sp->cfp, keyword);
 	if (new_val) {
@@ -327,7 +334,8 @@ static inline int sp_check_for_keyword(struct shader_parser *sp, const char *key
 			return PARSE_EOF;
 
 		if (new_val && *val)
-			cf_adderror(&sp->cfp, "'$1' keyword already specified", LEX_WARNING, keyword, NULL, NULL);
+			cf_adderror(&sp->cfp, "'$1' keyword already specified",
+				    LEX_WARNING, keyword, NULL, NULL);
 		*val = new_val;
 
 		return PARSE_CONTINUE;
@@ -336,7 +344,8 @@ static inline int sp_check_for_keyword(struct shader_parser *sp, const char *key
 	return PARSE_SUCCESS;
 }
 
-static inline int sp_parse_func_param(struct shader_parser *sp, struct shader_var *var)
+static inline int sp_parse_func_param(struct shader_parser *sp,
+				      struct shader_var *var)
 {
 	int code;
 	bool var_type_keyword = false;
@@ -386,7 +395,8 @@ static inline int sp_parse_func_param(struct shader_parser *sp, struct shader_va
 		return PARSE_EOF;
 
 	if (cf_token_is(&sp->cfp, ":")) {
-		code = cf_next_name(&sp->cfp, &var->mapping, "mapping specifier", ")");
+		code = cf_next_name(&sp->cfp, &var->mapping,
+				    "mapping specifier", ")");
 		if (code != PARSE_SUCCESS)
 			return code;
 
@@ -397,7 +407,8 @@ static inline int sp_parse_func_param(struct shader_parser *sp, struct shader_va
 	return PARSE_SUCCESS;
 }
 
-static bool sp_parse_func_params(struct shader_parser *sp, struct shader_func *func)
+static bool sp_parse_func_params(struct shader_parser *sp,
+				 struct shader_func *func)
 {
 	struct cf_token peek;
 	int code;
@@ -450,7 +461,8 @@ static void sp_parse_function(struct shader_parser *sp, char *type, char *name)
 	/* if function is mapped to something, for example COLOR */
 	if (cf_token_is(&sp->cfp, ":")) {
 		char *mapping = NULL;
-		int errorcode = cf_next_name(&sp->cfp, &mapping, "mapping", "{");
+		int errorcode =
+			cf_next_name(&sp->cfp, &mapping, "mapping", "{");
 		if (errorcode != PARSE_SUCCESS)
 			goto error;
 
@@ -481,16 +493,19 @@ error:
 }
 
 /* parses "array[count]" */
-static bool sp_parse_param_array(struct shader_parser *sp, struct shader_var *param)
+static bool sp_parse_param_array(struct shader_parser *sp,
+				 struct shader_var *param)
 {
 	if (!cf_next_valid_token(&sp->cfp))
 		return false;
 
 	if (sp->cfp.cur_token->type != CFTOKEN_NUM ||
-	    !valid_int_str(sp->cfp.cur_token->str.array, sp->cfp.cur_token->str.len))
+	    !valid_int_str(sp->cfp.cur_token->str.array,
+			   sp->cfp.cur_token->str.len))
 		return false;
 
-	param->array_count = (int)strtol(sp->cfp.cur_token->str.array, NULL, 10);
+	param->array_count =
+		(int)strtol(sp->cfp.cur_token->str.array, NULL, 10);
 
 	if (cf_next_token_should_be(&sp->cfp, "]", ";", NULL) == PARSE_EOF)
 		return false;
@@ -501,7 +516,9 @@ static bool sp_parse_param_array(struct shader_parser *sp, struct shader_var *pa
 	return true;
 }
 
-static inline int sp_parse_param_assign_intfloat(struct shader_parser *sp, struct shader_var *param, bool is_float)
+static inline int sp_parse_param_assign_intfloat(struct shader_parser *sp,
+						 struct shader_var *param,
+						 bool is_float)
 {
 	int code;
 	bool is_negative = false;
@@ -524,12 +541,14 @@ static inline int sp_parse_param_assign_intfloat(struct shader_parser *sp, struc
 		float f = (float)os_strtod(sp->cfp.cur_token->str.array);
 		if (is_negative)
 			f = -f;
-		da_push_back_array(param->default_val, (uint8_t *)&f, sizeof(float));
+		da_push_back_array(param->default_val, (uint8_t *)&f,
+				   sizeof(float));
 	} else {
 		long l = strtol(sp->cfp.cur_token->str.array, NULL, 10);
 		if (is_negative)
 			l = -l;
-		da_push_back_array(param->default_val, (uint8_t *)&l, sizeof(long));
+		da_push_back_array(param->default_val, (uint8_t *)&l,
+				   sizeof(long));
 	}
 
 	return PARSE_SUCCESS;
@@ -539,7 +558,8 @@ static inline int sp_parse_param_assign_intfloat(struct shader_parser *sp, struc
  * parses assignment for float1, float2, float3, float4, and any combination
  * for float3x3, float4x4, etc
  */
-static inline int sp_parse_param_assign_float_array(struct shader_parser *sp, struct shader_var *param)
+static inline int sp_parse_param_assign_float_array(struct shader_parser *sp,
+						    struct shader_var *param)
 {
 	const char *float_type = param->type + 5;
 	int float_count = 0, code, i;
@@ -547,13 +567,15 @@ static inline int sp_parse_param_assign_float_array(struct shader_parser *sp, st
 	/* -------------------------------------------- */
 
 	if (float_type[0] < '1' || float_type[0] > '4')
-		cf_adderror(&sp->cfp, "Invalid row count", LEX_ERROR, NULL, NULL, NULL);
+		cf_adderror(&sp->cfp, "Invalid row count", LEX_ERROR, NULL,
+			    NULL, NULL);
 
 	float_count = float_type[0] - '0';
 
 	if (float_type[1] == 'x') {
 		if (float_type[2] < '1' || float_type[2] > '4')
-			cf_adderror(&sp->cfp, "Invalid column count", LEX_ERROR, NULL, NULL, NULL);
+			cf_adderror(&sp->cfp, "Invalid column count", LEX_ERROR,
+				    NULL, NULL, NULL);
 
 		float_count *= float_type[2] - '0';
 	}
@@ -579,7 +601,8 @@ static inline int sp_parse_param_assign_float_array(struct shader_parser *sp, st
 	return PARSE_SUCCESS;
 }
 
-static int sp_parse_param_assignment_val(struct shader_parser *sp, struct shader_var *param)
+static int sp_parse_param_assignment_val(struct shader_parser *sp,
+					 struct shader_var *param)
 {
 	if (strcmp(param->type, "int") == 0)
 		return sp_parse_param_assign_intfloat(sp, param, false);
@@ -588,12 +611,14 @@ static int sp_parse_param_assignment_val(struct shader_parser *sp, struct shader
 	else if (astrcmp_n(param->type, "float", 5) == 0)
 		return sp_parse_param_assign_float_array(sp, param);
 
-	cf_adderror(&sp->cfp, "Invalid type '$1' used for assignment", LEX_ERROR, param->type, NULL, NULL);
+	cf_adderror(&sp->cfp, "Invalid type '$1' used for assignment",
+		    LEX_ERROR, param->type, NULL, NULL);
 
 	return PARSE_CONTINUE;
 }
 
-static inline bool sp_parse_param_assign(struct shader_parser *sp, struct shader_var *param)
+static inline bool sp_parse_param_assign(struct shader_parser *sp,
+					 struct shader_var *param)
 {
 	if (sp_parse_param_assignment_val(sp, param) != PARSE_SUCCESS)
 		return false;
@@ -604,7 +629,8 @@ static inline bool sp_parse_param_assign(struct shader_parser *sp, struct shader
 	return true;
 }
 
-static void sp_parse_param(struct shader_parser *sp, char *type, char *name, bool is_const, bool is_uniform)
+static void sp_parse_param(struct shader_parser *sp, char *type, char *name,
+			   bool is_const, bool is_uniform)
 {
 	struct shader_var param;
 	shader_var_init_param(&param, type, name, is_uniform, is_const);
@@ -626,7 +652,8 @@ error:
 	shader_var_free(&param);
 }
 
-static bool sp_get_var_specifiers(struct shader_parser *sp, bool *is_const, bool *is_uniform)
+static bool sp_get_var_specifiers(struct shader_parser *sp, bool *is_const,
+				  bool *is_uniform)
 {
 	while (true) {
 		int code = sp_check_for_keyword(sp, "const", is_const);
@@ -647,7 +674,8 @@ static bool sp_get_var_specifiers(struct shader_parser *sp, bool *is_const, bool
 	return true;
 }
 
-static inline void report_invalid_func_keyword(struct shader_parser *sp, const char *name, bool val)
+static inline void report_invalid_func_keyword(struct shader_parser *sp,
+					       const char *name, bool val)
 {
 	if (val)
 		cf_adderror(&sp->cfp,
@@ -688,13 +716,15 @@ error:
 	bfree(name);
 }
 
-bool shader_parse(struct shader_parser *sp, const char *shader, const char *file)
+bool shader_parse(struct shader_parser *sp, const char *shader,
+		  const char *file)
 {
 	if (!cf_parser_parse(&sp->cfp, shader, file))
 		return false;
 
 	while (sp->cfp.cur_token && sp->cfp.cur_token->type != CFTOKEN_NONE) {
-		if (cf_token_is(&sp->cfp, ";") || is_whitespace(*sp->cfp.cur_token->str.array)) {
+		if (cf_token_is(&sp->cfp, ";") ||
+		    is_whitespace(*sp->cfp.cur_token->str.array)) {
 			sp->cfp.cur_token++;
 
 		} else if (cf_token_is(&sp->cfp, "struct")) {
@@ -704,7 +734,8 @@ bool shader_parse(struct shader_parser *sp, const char *shader, const char *file
 			sp_parse_sampler_state(sp);
 
 		} else if (cf_token_is(&sp->cfp, "{")) {
-			cf_adderror(&sp->cfp, "Unexpected code segment", LEX_ERROR, NULL, NULL, NULL);
+			cf_adderror(&sp->cfp, "Unexpected code segment",
+				    LEX_ERROR, NULL, NULL, NULL);
 			cf_pass_pair(&sp->cfp, '{', '}');
 
 		} else {

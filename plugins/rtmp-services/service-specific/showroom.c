@@ -32,7 +32,8 @@ void free_showroom_data(void)
 	da_free(cur_ingests);
 }
 
-static size_t showroom_write_cb(void *data, size_t size, size_t nmemb, void *user_pointer)
+static size_t showroom_write_cb(void *data, size_t size, size_t nmemb,
+				void *user_pointer)
 {
 	struct dstr *json = user_pointer;
 	size_t realsize = size * nmemb;
@@ -58,7 +59,8 @@ static struct showroom_ingest_info *find_ingest(const char *access_key)
 #define SEC_TO_NSEC 1000000000ULL
 #endif
 
-static struct showroom_ingest_info *get_ingest_from_json(char *str, const char *access_key)
+static struct showroom_ingest_info *get_ingest_from_json(char *str,
+							 const char *access_key)
 {
 	json_error_t error;
 	json_t *root;
@@ -67,8 +69,10 @@ static struct showroom_ingest_info *get_ingest_from_json(char *str, const char *
 		return NULL;
 	}
 
-	const char *url_str = json_string_value(json_object_get(root, "streaming_url_rtmp"));
-	const char *key_str = json_string_value(json_object_get(root, "streaming_key"));
+	const char *url_str =
+		json_string_value(json_object_get(root, "streaming_url_rtmp"));
+	const char *key_str =
+		json_string_value(json_object_get(root, "streaming_key"));
 
 	struct showroom_ingest_info *info = find_ingest(access_key);
 	if (!info) {
@@ -86,7 +90,8 @@ static struct showroom_ingest_info *get_ingest_from_json(char *str, const char *
 	return info;
 }
 
-struct showroom_ingest *showroom_get_ingest(const char *server, const char *access_key)
+struct showroom_ingest *showroom_get_ingest(const char *server,
+					    const char *access_key)
 {
 	struct showroom_ingest_info *info = find_ingest(access_key);
 	CURL *curl_handle;
@@ -123,7 +128,9 @@ struct showroom_ingest *showroom_get_ingest(const char *server, const char *acce
 	res = curl_easy_perform(curl_handle);
 	dstr_free(&uri);
 	if (res != CURLE_OK) {
-		blog(LOG_WARNING, "showroom_get_ingest: curl_easy_perform() failed: %s", curl_easy_strerror(res));
+		blog(LOG_WARNING,
+		     "showroom_get_ingest: curl_easy_perform() failed: %s",
+		     curl_easy_strerror(res));
 		goto cleanup;
 	}
 
@@ -137,8 +144,9 @@ struct showroom_ingest *showroom_get_ingest(const char *server, const char *acce
 	}
 
 	if (json.len == 0) {
-		blog(LOG_WARNING, "showroom_get_ingest: curl_easy_perform() returned "
-				  "empty response");
+		blog(LOG_WARNING,
+		     "showroom_get_ingest: curl_easy_perform() returned "
+		     "empty response");
 		goto cleanup;
 	}
 

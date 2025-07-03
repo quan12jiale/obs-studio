@@ -77,7 +77,10 @@ class ConfigFile {
 
 public:
 	inline ConfigFile() : config(NULL) {}
-	inline ConfigFile(ConfigFile &&other) noexcept : config(other.config) { other.config = nullptr; }
+	inline ConfigFile(ConfigFile &&other) noexcept : config(other.config)
+	{
+		other.config = nullptr;
+	}
 	inline ~ConfigFile() { config_close(config); }
 
 	inline bool Create(const char *file)
@@ -108,7 +111,8 @@ public:
 
 	inline int Save() { return config_save(config); }
 
-	inline int SaveSafe(const char *temp_ext, const char *backup_ext = nullptr)
+	inline int SaveSafe(const char *temp_ext,
+			    const char *backup_ext = nullptr)
 	{
 		return config_save_safe(config, temp_ext, backup_ext);
 	}
@@ -131,7 +135,10 @@ class TextLookup {
 
 public:
 	inline TextLookup(lookup_t *lookup = nullptr) : lookup(lookup) {}
-	inline TextLookup(TextLookup &&other) noexcept : lookup(other.lookup) { other.lookup = nullptr; }
+	inline TextLookup(TextLookup &&other) noexcept : lookup(other.lookup)
+	{
+		other.lookup = nullptr;
+	}
 	inline ~TextLookup() { text_lookup_destroy(lookup); }
 
 	inline TextLookup &operator=(lookup_t *val)

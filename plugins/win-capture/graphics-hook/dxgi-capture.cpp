@@ -12,10 +12,15 @@
 #include <d3d12.h>
 #endif
 
-typedef HRESULT(STDMETHODCALLTYPE *resize_buffers_t)(IDXGISwapChain *, UINT, UINT, UINT, DXGI_FORMAT, UINT);
+typedef ULONG(STDMETHODCALLTYPE *release_t)(IUnknown *);
+typedef HRESULT(STDMETHODCALLTYPE *resize_buffers_t)(IDXGISwapChain *, UINT,
+						     UINT, UINT, DXGI_FORMAT,
+						     UINT);
 typedef HRESULT(STDMETHODCALLTYPE *present_t)(IDXGISwapChain *, UINT, UINT);
-typedef HRESULT(STDMETHODCALLTYPE *present1_t)(IDXGISwapChain1 *, UINT, UINT, const DXGI_PRESENT_PARAMETERS *);
+typedef HRESULT(STDMETHODCALLTYPE *present1_t)(IDXGISwapChain1 *, UINT, UINT,
+					       const DXGI_PRESENT_PARAMETERS *);
 
+release_t RealRelease = nullptr;
 resize_buffers_t RealResizeBuffers = nullptr;
 present_t RealPresent = nullptr;
 present1_t RealPresent1 = nullptr;
@@ -35,35 +40,6 @@ static struct dxgi_swap_data data = {};
 static int swap_chain_mismatch_count = 0;
 constexpr int swap_chain_mismtach_limit = 16;
 
-static void STDMETHODCALLTYPE SwapChainDestructed(void *pData)
-{
-	if (pData == data.swap) {
-		data.swap = nullptr;
-		data.capture = nullptr;
-		memset(dxgi_possible_swap_queues, 0, sizeof(dxgi_possible_swap_queues));
-		dxgi_possible_swap_queue_count = 0;
-		dxgi_present_attempted = false;
-
-		if (data.free)
-			data.free();
-		data.free = nullptr;
-	}
-}
-
-static void init_swap_data(IDXGISwapChain *swap, void (*capture)(void *, void *), void (*free)(void))
-{
-	data.swap = swap;
-	data.capture = capture;
-	data.free = free;
-
-	ID3DDestructionNotifier *notifier;
-	if (SUCCEEDED(swap->QueryInterface<ID3DDestructionNotifier>(&notifier))) {
-		UINT callbackID;
-		notifier->RegisterDestructionCallback(&SwapChainDestructed, swap, &callbackID);
-		notifier->Release();
-	}
-}
-
 static bool setup_dxgi(IDXGISwapChain *swap)
 {
 	IUnknown *device;
@@ -78,7 +54,9 @@ static bool setup_dxgi(IDXGISwapChain *swap)
 		if (level >= D3D_FEATURE_LEVEL_11_0) {
 			hlog("Found D3D11 11.0 device on swap chain");
 
-			init_swap_data(swap, d3d11_capture, d3d11_free);
+			data.swap = swap;
+			data.capture = d3d11_capture;
+			data.free = d3d11_free;
 			return true;
 		}
 	}
@@ -89,7 +67,9 @@ static bool setup_dxgi(IDXGISwapChain *swap)
 
 		hlog("Found D3D10 device on swap chain");
 
-		init_swap_data(swap, d3d10_capture, d3d10_free);
+		data.swap = swap;
+		data.capture = d3d10_capture;
+		data.free = d3d10_free;
 		return true;
 	}
 
@@ -99,7 +79,9 @@ static bool setup_dxgi(IDXGISwapChain *swap)
 
 		hlog("Found D3D11 device on swap chain");
 
-		init_swap_data(swap, d3d11_capture, d3d11_free);
+		data.swap = swap;
+		data.capture = d3d11_capture;
+		data.free = d3d11_free;
 		return true;
 	}
 
@@ -108,14 +90,18 @@ static bool setup_dxgi(IDXGISwapChain *swap)
 	if (SUCCEEDED(hr)) {
 		device->Release();
 
-		hlog("Found D3D12 device on swap chain: swap=0x%" PRIX64 ", device=0x%" PRIX64,
+		hlog("Found D3D12 device on swap chain: swap=0x%" PRIX64
+		     ", device=0x%" PRIX64,
 		     (uint64_t)(uintptr_t)swap, (uint64_t)(uintptr_t)device);
 		for (size_t i = 0; i < dxgi_possible_swap_queue_count; ++i) {
-			hlog("    queue=0x%" PRIX64, (uint64_t)(uintptr_t)dxgi_possible_swap_queues[i]);
+			hlog("    queue=0x%" PRIX64,
+			     (uint64_t)(uintptr_t)dxgi_possible_swap_queues[i]);
 		}
 
 		if (dxgi_possible_swap_queue_count > 0) {
-			init_swap_data(swap, d3d12_capture, d3d12_free);
+			data.swap = swap;
+			data.capture = d3d12_capture;
+			data.free = d3d12_free;
 			return true;
 		}
 	}
@@ -125,10 +111,35 @@ static bool setup_dxgi(IDXGISwapChain *swap)
 	return false;
 }
 
+static ULONG STDMETHODCALLTYPE hook_release(IUnknown *unknown)
+{
+	const ULONG refs = RealRelease(unknown);
+
+	hlog_verbose("Release callback: Refs=%lu", refs);
+	if (unknown == data.swap && refs == 0) {
+		hlog_verbose("No more refs, so reset capture");
+
+		data.swap = nullptr;
+		data.capture = nullptr;
+		memset(dxgi_possible_swap_queues, 0,
+		       sizeof(dxgi_possible_swap_queues));
+		dxgi_possible_swap_queue_count = 0;
+		dxgi_present_attempted = false;
+
+		data.free();
+		data.free = nullptr;
+	}
+
+	return refs;
+}
+
 static bool resize_buffers_called = false;
 
-static HRESULT STDMETHODCALLTYPE hook_resize_buffers(IDXGISwapChain *swap, UINT buffer_count, UINT width, UINT height,
-						     DXGI_FORMAT format, UINT flags)
+static HRESULT STDMETHODCALLTYPE hook_resize_buffers(IDXGISwapChain *swap,
+						     UINT buffer_count,
+						     UINT width, UINT height,
+						     DXGI_FORMAT format,
+						     UINT flags)
 {
 	hlog_verbose("ResizeBuffers callback");
 
@@ -142,7 +153,8 @@ static HRESULT STDMETHODCALLTYPE hook_resize_buffers(IDXGISwapChain *swap, UINT 
 		data.free();
 	data.free = nullptr;
 
-	const HRESULT hr = RealResizeBuffers(swap, buffer_count, width, height, format, flags);
+	const HRESULT hr = RealResizeBuffers(swap, buffer_count, width, height,
+					     format, flags);
 
 	resize_buffers_called = true;
 
@@ -170,12 +182,12 @@ static void update_mismatch_count(bool match)
 		if (swap_chain_mismatch_count == swap_chain_mismtach_limit) {
 			data.swap = nullptr;
 			data.capture = nullptr;
-			memset(dxgi_possible_swap_queues, 0, sizeof(dxgi_possible_swap_queues));
+			memset(dxgi_possible_swap_queues, 0,
+			       sizeof(dxgi_possible_swap_queues));
 			dxgi_possible_swap_queue_count = 0;
 			dxgi_present_attempted = false;
 
-			if (data.free)
-				data.free();
+			data.free();
 			data.free = nullptr;
 
 			swap_chain_mismatch_count = 0;
@@ -183,7 +195,8 @@ static void update_mismatch_count(bool match)
 	}
 }
 
-static HRESULT STDMETHODCALLTYPE hook_present(IDXGISwapChain *swap, UINT sync_interval, UINT flags)
+static HRESULT STDMETHODCALLTYPE hook_present(IDXGISwapChain *swap,
+					      UINT sync_interval, UINT flags)
 {
 	if (should_passthrough()) {
 		dxgi_presenting = true;
@@ -203,9 +216,10 @@ static HRESULT STDMETHODCALLTYPE hook_present(IDXGISwapChain *swap, UINT sync_in
 		setup_dxgi(swap);
 	}
 
-	hlog_verbose("Present callback: sync_interval=%u, flags=%u, current_swap=0x%" PRIX64
-		     ", expected_swap=0x%" PRIX64,
-		     sync_interval, flags, swap, data.swap);
+	hlog_verbose(
+		"Present callback: sync_interval=%u, flags=%u, current_swap=0x%" PRIX64
+		", expected_swap=0x%" PRIX64,
+		sync_interval, flags, swap, data.swap);
 	const bool capture = !test_draw && swap == data.swap && data.capture;
 	if (capture && !capture_overlay) {
 		IUnknown *backbuffer = get_dxgi_backbuffer(swap);
@@ -244,12 +258,14 @@ static HRESULT STDMETHODCALLTYPE hook_present(IDXGISwapChain *swap, UINT sync_in
 	return hr;
 }
 
-static HRESULT STDMETHODCALLTYPE hook_present1(IDXGISwapChain1 *swap, UINT sync_interval, UINT flags,
-					       const DXGI_PRESENT_PARAMETERS *params)
+static HRESULT STDMETHODCALLTYPE
+hook_present1(IDXGISwapChain1 *swap, UINT sync_interval, UINT flags,
+	      const DXGI_PRESENT_PARAMETERS *params)
 {
 	if (should_passthrough()) {
 		dxgi_presenting = true;
-		const HRESULT hr = RealPresent1(swap, sync_interval, flags, params);
+		const HRESULT hr =
+			RealPresent1(swap, sync_interval, flags, params);
 		dxgi_presenting = false;
 		return hr;
 	}
@@ -265,9 +281,10 @@ static HRESULT STDMETHODCALLTYPE hook_present1(IDXGISwapChain1 *swap, UINT sync_
 		setup_dxgi(swap);
 	}
 
-	hlog_verbose("Present1 callback: sync_interval=%u, flags=%u, current_swap=0x%" PRIX64
-		     ", expected_swap=0x%" PRIX64,
-		     sync_interval, flags, swap, data.swap);
+	hlog_verbose(
+		"Present1 callback: sync_interval=%u, flags=%u, current_swap=0x%" PRIX64
+		", expected_swap=0x%" PRIX64,
+		sync_interval, flags, swap, data.swap);
 	const bool capture = !test_draw && swap == data.swap && !!data.capture;
 	if (capture && !capture_overlay) {
 		IUnknown *backbuffer = get_dxgi_backbuffer(swap);
@@ -309,11 +326,18 @@ bool hook_dxgi(void)
 
 	/* ---------------------- */
 
-	void *present_addr = get_offset_addr(dxgi_module, global_hook_info->offsets.dxgi.present);
-	void *resize_addr = get_offset_addr(dxgi_module, global_hook_info->offsets.dxgi.resize);
+	void *present_addr = get_offset_addr(
+		dxgi_module, global_hook_info->offsets.dxgi.present);
+	void *resize_addr = get_offset_addr(
+		dxgi_module, global_hook_info->offsets.dxgi.resize);
 	void *present1_addr = nullptr;
 	if (global_hook_info->offsets.dxgi.present1)
-		present1_addr = get_offset_addr(dxgi_module, global_hook_info->offsets.dxgi.present1);
+		present1_addr = get_offset_addr(
+			dxgi_module, global_hook_info->offsets.dxgi.present1);
+	void *release_addr = nullptr;
+	if (global_hook_info->offsets.dxgi2.release)
+		release_addr = get_offset_addr(
+			dxgi_module, global_hook_info->offsets.dxgi2.release);
 
 	DetourTransactionBegin();
 
@@ -328,6 +352,11 @@ bool hook_dxgi(void)
 		DetourAttach(&(PVOID &)RealPresent1, hook_present1);
 	}
 
+	if (release_addr) {
+		RealRelease = (release_t)release_addr;
+		DetourAttach(&(PVOID &)RealRelease, hook_release);
+	}
+
 	const LONG error = DetourTransactionCommit();
 	const bool success = error == NO_ERROR;
 	if (success) {
@@ -335,11 +364,14 @@ bool hook_dxgi(void)
 		hlog("Hooked IDXGISwapChain::ResizeBuffers");
 		if (RealPresent1)
 			hlog("Hooked IDXGISwapChain1::Present1");
+		if (RealRelease)
+			hlog("Hooked IDXGISwapChain::Release");
 		hlog("Hooked DXGI");
 	} else {
 		RealPresent = nullptr;
 		RealResizeBuffers = nullptr;
 		RealPresent1 = nullptr;
+		RealRelease = nullptr;
 		hlog("Failed to attach Detours hook: %ld", error);
 	}
 

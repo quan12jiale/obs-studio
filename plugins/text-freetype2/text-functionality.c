@@ -30,29 +30,52 @@ extern uint32_t texbuf_w, texbuf_h;
 
 void draw_outlines(struct ft2_source *srcdata)
 {
+	// Horrible (hopefully temporary) solution for outlines.
+	uint32_t *tmp;
+
+	struct gs_vb_data *vdata = gs_vertexbuffer_get_data(srcdata->vbuf);
+
 	if (!srcdata->text)
 		return;
 
+	tmp = vdata->colors;
+	vdata->colors = srcdata->colorbuf;
+
 	gs_matrix_push();
 	for (int32_t i = 0; i < 8; i++) {
-		gs_matrix_translate3f(offsets[i * 2], offsets[(i * 2) + 1], 0.0f);
-		draw_uv_vbuffer(srcdata->vbuf, srcdata->tex, srcdata->draw_effect, (uint32_t)wcslen(srcdata->text) * 6,
-				false);
+		gs_matrix_translate3f(offsets[i * 2], offsets[(i * 2) + 1],
+				      0.0f);
+		draw_uv_vbuffer(srcdata->vbuf, srcdata->tex,
+				srcdata->draw_effect,
+				(uint32_t)wcslen(srcdata->text) * 6);
 	}
 	gs_matrix_identity();
 	gs_matrix_pop();
+
+	vdata->colors = tmp;
 }
 
 void draw_drop_shadow(struct ft2_source *srcdata)
 {
+	// Horrible (hopefully temporary) solution for drop shadow.
+	uint32_t *tmp;
+
+	struct gs_vb_data *vdata = gs_vertexbuffer_get_data(srcdata->vbuf);
+
 	if (!srcdata->text)
 		return;
 
+	tmp = vdata->colors;
+	vdata->colors = srcdata->colorbuf;
+
 	gs_matrix_push();
 	gs_matrix_translate3f(4.0f, 4.0f, 0.0f);
-	draw_uv_vbuffer(srcdata->vbuf, srcdata->tex, srcdata->draw_effect, (uint32_t)wcslen(srcdata->text) * 6, false);
+	draw_uv_vbuffer(srcdata->vbuf, srcdata->tex, srcdata->draw_effect,
+			(uint32_t)wcslen(srcdata->text) * 6);
 	gs_matrix_identity();
 	gs_matrix_pop();
+
+	vdata->colors = tmp;
 }
 
 void set_up_vertex_buffer(struct ft2_source *srcdata)
@@ -82,7 +105,8 @@ void set_up_vertex_buffer(struct ft2_source *srcdata)
 		return;
 	}
 
-	srcdata->vbuf = create_uv_vbuffer((uint32_t)wcslen(srcdata->text) * 6, true);
+	srcdata->vbuf =
+		create_uv_vbuffer((uint32_t)wcslen(srcdata->text) * 6, true);
 
 	if (srcdata->custom_width <= 100)
 		goto skip_word_wrap;
@@ -114,7 +138,8 @@ void set_up_vertex_buffer(struct ft2_source *srcdata)
 		if (srcdata->text[i] == L' ')
 			space_pos = i;
 	next_char:;
-		glyph_index = FT_Get_Char_Index(srcdata->font_face, srcdata->text[i]);
+		glyph_index =
+			FT_Get_Char_Index(srcdata->font_face, srcdata->text[i]);
 		if (src_glyph)
 			word_width += src_glyph->xadv;
 	eos_skip:;
@@ -122,7 +147,6 @@ void set_up_vertex_buffer(struct ft2_source *srcdata)
 
 skip_word_wrap:;
 	fill_vertex_buffer(srcdata);
-	gs_vertexbuffer_flush(srcdata->vbuf);
 	obs_leave_graphics();
 }
 
@@ -147,6 +171,16 @@ void fill_vertex_buffer(struct ft2_source *srcdata)
 		dx = offset;
 	}
 
+	if (srcdata->colorbuf != NULL) {
+		bfree(srcdata->colorbuf);
+		srcdata->colorbuf = NULL;
+	}
+	srcdata->colorbuf =
+		bzalloc(sizeof(uint32_t) * wcslen(srcdata->text) * 6);
+	for (size_t i = 0; i < len * 6; i++) {
+		srcdata->colorbuf[i] = 0xFF000000;
+	}
+
 	for (size_t i = 0; i < len; i++) {
 	add_linebreak:;
 		if (srcdata->text[i] != L'\n')
@@ -163,7 +197,8 @@ void fill_vertex_buffer(struct ft2_source *srcdata)
 		if (srcdata->text[i] == L'\r')
 			goto skip_glyph;
 
-		glyph_index = FT_Get_Char_Index(srcdata->font_face, srcdata->text[i]);
+		glyph_index =
+			FT_Get_Char_Index(srcdata->font_face, srcdata->text[i]);
 		if (src_glyph == NULL)
 			goto skip_glyph;
 
@@ -177,10 +212,14 @@ void fill_vertex_buffer(struct ft2_source *srcdata)
 
 	skip_custom_width:;
 
-		set_v3_rect(vdata->points + (cur_glyph * 6), (float)dx + (float)src_glyph->xoff,
-			    (float)dy - (float)src_glyph->yoff, (float)src_glyph->w, (float)src_glyph->h);
-		set_v2_uv(tvarray + (cur_glyph * 6), src_glyph->u, src_glyph->v, src_glyph->u2, src_glyph->v2);
-		set_rect_colors2(col + (cur_glyph * 6), srcdata->color[0], srcdata->color[1]);
+		set_v3_rect(vdata->points + (cur_glyph * 6),
+			    (float)dx + (float)src_glyph->xoff,
+			    (float)dy - (float)src_glyph->yoff,
+			    (float)src_glyph->w, (float)src_glyph->h);
+		set_v2_uv(tvarray + (cur_glyph * 6), src_glyph->u, src_glyph->v,
+			  src_glyph->u2, src_glyph->v2);
+		set_rect_colors2(col + (cur_glyph * 6), srcdata->color[0],
+				 srcdata->color[1]);
 		dx += src_glyph->xadv;
 		if (dy - (float)src_glyph->yoff + src_glyph->h > max_y)
 			max_y = dy - src_glyph->yoff + src_glyph->h;
@@ -210,16 +249,21 @@ void cache_standard_glyphs(struct ft2_source *srcdata)
 
 FT_Render_Mode get_render_mode(struct ft2_source *srcdata)
 {
-	return srcdata->antialiasing ? FT_RENDER_MODE_NORMAL : FT_RENDER_MODE_MONO;
+	return srcdata->antialiasing ? FT_RENDER_MODE_NORMAL
+				     : FT_RENDER_MODE_MONO;
 }
 
-void load_glyph(struct ft2_source *srcdata, const FT_UInt glyph_index, const FT_Render_Mode render_mode)
+void load_glyph(struct ft2_source *srcdata, const FT_UInt glyph_index,
+		const FT_Render_Mode render_mode)
 {
-	const FT_Int32 load_mode = render_mode == FT_RENDER_MODE_MONO ? FT_LOAD_TARGET_MONO : FT_LOAD_DEFAULT;
+	const FT_Int32 load_mode = render_mode == FT_RENDER_MODE_MONO
+					   ? FT_LOAD_TARGET_MONO
+					   : FT_LOAD_DEFAULT;
 	FT_Load_Glyph(srcdata->font_face, glyph_index, load_mode);
 }
 
-struct glyph_info *init_glyph(FT_GlyphSlot slot, const uint32_t dx, const uint32_t dy, const uint32_t g_w,
+struct glyph_info *init_glyph(FT_GlyphSlot slot, const uint32_t dx,
+			      const uint32_t dy, const uint32_t g_w,
 			      const uint32_t g_h)
 {
 	struct glyph_info *glyph = bzalloc(sizeof(struct glyph_info));
@@ -236,7 +280,8 @@ struct glyph_info *init_glyph(FT_GlyphSlot slot, const uint32_t dx, const uint32
 	return glyph;
 }
 
-uint8_t get_pixel_value(const unsigned char *buf_row, FT_Render_Mode render_mode, const uint32_t x)
+uint8_t get_pixel_value(const unsigned char *buf_row,
+			FT_Render_Mode render_mode, const uint32_t x)
 {
 	if (render_mode == FT_RENDER_MODE_NORMAL) {
 		return buf_row[x];
@@ -248,7 +293,8 @@ uint8_t get_pixel_value(const unsigned char *buf_row, FT_Render_Mode render_mode
 	return pixel_set ? 255 : 0;
 }
 
-void rasterize(struct ft2_source *srcdata, FT_GlyphSlot slot, const FT_Render_Mode render_mode, const uint32_t dx,
+void rasterize(struct ft2_source *srcdata, FT_GlyphSlot slot,
+	       const FT_Render_Mode render_mode, const uint32_t dx,
 	       const uint32_t dy)
 {
 	/**
@@ -265,7 +311,9 @@ void rasterize(struct ft2_source *srcdata, FT_GlyphSlot slot, const FT_Render_Mo
 
 		for (uint32_t x = 0; x < slot->bitmap.width; x++) {
 			const uint32_t row_pixel_position = dx + x;
-			const uint8_t pixel_value = get_pixel_value(&slot->bitmap.buffer[row_start], render_mode, x);
+			const uint8_t pixel_value =
+				get_pixel_value(&slot->bitmap.buffer[row_start],
+						render_mode, x);
 			srcdata->texbuf[row_pixel_position + row] = pixel_value;
 		}
 	}
@@ -287,7 +335,8 @@ void cache_glyphs(struct ft2_source *srcdata, wchar_t *cache_glyphs)
 	const FT_Render_Mode render_mode = get_render_mode(srcdata);
 
 	for (size_t i = 0; i < len; i++) {
-		const FT_UInt glyph_index = FT_Get_Char_Index(srcdata->font_face, cache_glyphs[i]);
+		const FT_UInt glyph_index =
+			FT_Get_Char_Index(srcdata->font_face, cache_glyphs[i]);
 
 		if (src_glyph != NULL) {
 			continue;
@@ -309,7 +358,8 @@ void cache_glyphs(struct ft2_source *srcdata, wchar_t *cache_glyphs)
 		}
 
 		if (dy + g_h >= texbuf_h) {
-			blog(LOG_WARNING, "Out of space trying to render glyphs");
+			blog(LOG_WARNING,
+			     "Out of space trying to render glyphs");
 			break;
 		}
 
@@ -338,7 +388,9 @@ void cache_glyphs(struct ft2_source *srcdata, wchar_t *cache_glyphs)
 			gs_texture_destroy(tmp_texture);
 		}
 
-		srcdata->tex = gs_texture_create(texbuf_w, texbuf_h, GS_A8, 1, (const uint8_t **)&srcdata->texbuf, 0);
+		srcdata->tex = gs_texture_create(
+			texbuf_w, texbuf_h, GS_A8, 1,
+			(const uint8_t **)&srcdata->texbuf, 0);
 
 		obs_leave_graphics();
 	}
@@ -414,7 +466,8 @@ void load_text_from_file(struct ft2_source *srcdata, const char *filename)
 		srcdata->text = NULL;
 	}
 	srcdata->text = bzalloc((strlen(tmp_read) + 1) * sizeof(wchar_t));
-	os_utf8_to_wcs(tmp_read, strlen(tmp_read), srcdata->text, (strlen(tmp_read) + 1));
+	os_utf8_to_wcs(tmp_read, strlen(tmp_read), srcdata->text,
+		       (strlen(tmp_read) + 1));
 
 	remove_cr(srcdata->text);
 	bfree(tmp_read);
@@ -478,7 +531,8 @@ void read_from_end(struct ft2_source *srcdata, const char *filename)
 			srcdata->text = NULL;
 		}
 		srcdata->text = bzalloc(filesize - cur_pos);
-		bytes_read = fread(srcdata->text, (filesize - cur_pos), 1, tmp_file);
+		bytes_read =
+			fread(srcdata->text, (filesize - cur_pos), 1, tmp_file);
 
 		remove_cr(srcdata->text);
 		bfree(tmp_read);
@@ -496,7 +550,8 @@ void read_from_end(struct ft2_source *srcdata, const char *filename)
 		srcdata->text = NULL;
 	}
 	srcdata->text = bzalloc((strlen(tmp_read) + 1) * sizeof(wchar_t));
-	os_utf8_to_wcs(tmp_read, strlen(tmp_read), srcdata->text, (strlen(tmp_read) + 1));
+	os_utf8_to_wcs(tmp_read, strlen(tmp_read), srcdata->text,
+		       (strlen(tmp_read) + 1));
 
 	remove_cr(srcdata->text);
 	bfree(tmp_read);
@@ -512,18 +567,15 @@ uint32_t get_ft2_text_width(wchar_t *text, struct ft2_source *srcdata)
 	uint32_t w = 0, max_w = 0;
 	const size_t len = wcslen(text);
 	for (size_t i = 0; i < len; i++) {
-		const FT_UInt glyph_index = FT_Get_Char_Index(srcdata->font_face, text[i]);
+		const FT_UInt glyph_index =
+			FT_Get_Char_Index(srcdata->font_face, text[i]);
+
+		load_glyph(srcdata, glyph_index, get_render_mode(srcdata));
 
 		if (text[i] == L'\n')
 			w = 0;
 		else {
-			if (src_glyph) {
-				// Use the cached values.
-				w += src_glyph->xadv;
-			} else {
-				load_glyph(srcdata, glyph_index, get_render_mode(srcdata));
-				w += slot->advance.x >> 6;
-			}
+			w += slot->advance.x >> 6;
 			if (w > max_w)
 				max_w = w;
 		}

@@ -44,7 +44,10 @@ public:
 
 	inline HANDLE *operator&() { return &handle; }
 
-	inline bool Valid() const { return handle && handle != INVALID_HANDLE_VALUE; }
+	inline bool Valid() const
+	{
+		return handle && handle != INVALID_HANDLE_VALUE;
+	}
 };
 
 class WinModule {

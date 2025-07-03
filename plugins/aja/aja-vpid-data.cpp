@@ -6,9 +6,7 @@ VPIDData::VPIDData()
 	  mStandardA{VPIDStandard_Unknown},
 	  mStandardB{VPIDStandard_Unknown},
 	  mSamplingA{VPIDSampling_XYZ_444},
-	  mSamplingB{VPIDSampling_XYZ_444},
-	  mBitDepthA{VPIDBitDepth_8},
-	  mBitDepthB{VPIDBitDepth_8}
+	  mSamplingB{VPIDSampling_XYZ_444}
 {
 }
 
@@ -18,9 +16,7 @@ VPIDData::VPIDData(ULWord vpidA, ULWord vpidB)
 	  mStandardA{VPIDStandard_Unknown},
 	  mStandardB{VPIDStandard_Unknown},
 	  mSamplingA{VPIDSampling_XYZ_444},
-	  mSamplingB{VPIDSampling_XYZ_444},
-	  mBitDepthA{VPIDBitDepth_8},
-	  mBitDepthB{VPIDBitDepth_8}
+	  mSamplingB{VPIDSampling_XYZ_444}
 {
 	Parse();
 }
@@ -31,9 +27,7 @@ VPIDData::VPIDData(const VPIDData &other)
 	  mStandardA{VPIDStandard_Unknown},
 	  mStandardB{VPIDStandard_Unknown},
 	  mSamplingA{VPIDSampling_XYZ_444},
-	  mSamplingB{VPIDSampling_XYZ_444},
-	  mBitDepthA{VPIDBitDepth_8},
-	  mBitDepthB{VPIDBitDepth_8}
+	  mSamplingB{VPIDSampling_XYZ_444}
 {
 	Parse();
 }
@@ -43,9 +37,7 @@ VPIDData::VPIDData(VPIDData &&other)
 	  mStandardA{VPIDStandard_Unknown},
 	  mStandardB{VPIDStandard_Unknown},
 	  mSamplingA{VPIDSampling_XYZ_444},
-	  mSamplingB{VPIDSampling_XYZ_444},
-	  mBitDepthA{VPIDBitDepth_8},
-	  mBitDepthB{VPIDBitDepth_8}
+	  mSamplingB{VPIDSampling_XYZ_444}
 {
 	Parse();
 }
@@ -54,12 +46,6 @@ VPIDData &VPIDData::operator=(const VPIDData &other)
 {
 	mVpidA = other.mVpidA;
 	mVpidB = other.mVpidB;
-	mStandardA = other.mStandardA;
-	mStandardB = other.mStandardB;
-	mSamplingA = other.mSamplingA;
-	mSamplingB = other.mSamplingB;
-	mBitDepthA = other.mBitDepthA;
-	mBitDepthB = other.mBitDepthB;
 	return *this;
 }
 
@@ -67,12 +53,6 @@ VPIDData &VPIDData::operator=(VPIDData &&other)
 {
 	mVpidA = other.mVpidA;
 	mVpidB = other.mVpidB;
-	mStandardA = other.mStandardA;
-	mStandardB = other.mStandardB;
-	mSamplingA = other.mSamplingA;
-	mSamplingB = other.mSamplingB;
-	mBitDepthA = other.mBitDepthA;
-	mBitDepthB = other.mBitDepthB;
 	return *this;
 }
 
@@ -102,13 +82,11 @@ void VPIDData::Parse()
 	parserA.SetVPID(mVpidA);
 	mStandardA = parserA.GetStandard();
 	mSamplingA = parserA.GetSampling();
-	mBitDepthA = parserA.GetBitDepth();
 
 	CNTV2VPID parserB;
 	parserB.SetVPID(mVpidB);
 	mStandardB = parserB.GetStandard();
 	mSamplingB = parserB.GetSampling();
-	mBitDepthB = parserB.GetBitDepth();
 }
 
 bool VPIDData::IsRGB() const
@@ -132,9 +110,4 @@ VPIDStandard VPIDData::Standard() const
 VPIDSampling VPIDData::Sampling() const
 {
 	return mSamplingA;
-}
-
-VPIDBitDepth VPIDData::BitDepth() const
-{
-	return mBitDepthA;
 }

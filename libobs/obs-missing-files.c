@@ -36,7 +36,8 @@ struct obs_missing_files {
 
 obs_missing_files_t *obs_missing_files_create()
 {
-	struct obs_missing_files *files = bzalloc(sizeof(struct obs_missing_files));
+	struct obs_missing_files *files =
+		bzalloc(sizeof(struct obs_missing_files));
 
 	return files;
 }
@@ -51,7 +52,8 @@ void obs_missing_files_destroy(obs_missing_files_t *files)
 	bfree(files);
 }
 
-void obs_missing_files_add_file(obs_missing_files_t *files, obs_missing_file_t *file)
+void obs_missing_files_add_file(obs_missing_files_t *files,
+				obs_missing_file_t *file)
 {
 	da_insert(files->files, files->files.num, &file);
 }
@@ -61,12 +63,14 @@ size_t obs_missing_files_count(obs_missing_files_t *files)
 	return files->files.num;
 }
 
-obs_missing_file_t *obs_missing_files_get_file(obs_missing_files_t *files, int idx)
+obs_missing_file_t *obs_missing_files_get_file(obs_missing_files_t *files,
+					       int idx)
 {
 	return files->files.array[idx];
 }
 
-void obs_missing_files_append(obs_missing_files_t *dst, obs_missing_files_t *src)
+void obs_missing_files_append(obs_missing_files_t *dst,
+			      obs_missing_files_t *src)
 {
 	for (size_t i = 0; i < src->files.num; i++) {
 		obs_missing_file_t *file = src->files.array[i];
@@ -75,10 +79,12 @@ void obs_missing_files_append(obs_missing_files_t *dst, obs_missing_files_t *src
 	}
 }
 
-obs_missing_file_t *obs_missing_file_create(const char *path, obs_missing_file_cb callback, int src_type, void *src,
-					    void *data)
+obs_missing_file_t *obs_missing_file_create(const char *path,
+					    obs_missing_file_cb callback,
+					    int src_type, void *src, void *data)
 {
-	struct obs_missing_file *file = bzalloc(sizeof(struct obs_missing_file));
+	struct obs_missing_file *file =
+		bzalloc(sizeof(struct obs_missing_file));
 
 	file->file_path = bstrdup(path);
 	file->callback = callback;
@@ -120,11 +126,14 @@ void obs_missing_file_destroy(obs_missing_file_t *file)
 	bfree(file);
 }
 
-void obs_missing_file_issue_callback(obs_missing_file_t *file, const char *new_path)
+void obs_missing_file_issue_callback(obs_missing_file_t *file,
+				     const char *new_path)
 {
 	switch (file->src_type) {
 	case OBS_MISSING_FILE_SOURCE:
-		obs_source_replace_missing_file(file->callback, (obs_source_t *)file->src, new_path, file->data);
+		obs_source_replace_missing_file(file->callback,
+						(obs_source_t *)file->src,
+						new_path, file->data);
 		break;
 	case OBS_MISSING_FILE_SCRIPT:
 		break;

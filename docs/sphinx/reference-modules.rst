@@ -271,14 +271,12 @@ plugin modules.
 
 ---------------------
 
-.. function:: void obs_add_safe_module(const char *name)
+.. function:: void *obs_add_safe_module(const char *name)
 
    Adds a *name* to the list of modules allowed to load in Safe Mode.
    If the list is empty, all modules are allowed.
 
    :param  name: The name of the module (filename sans extension).
-
-   .. versionadded:: 30.0
 
 ---------------------
 

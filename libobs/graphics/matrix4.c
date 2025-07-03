@@ -57,62 +57,28 @@ void matrix4_from_axisang(struct matrix4 *dst, const struct axisang *aa)
 	matrix4_from_quat(dst, &q);
 }
 
-void matrix4_mul(struct matrix4 *dst, const struct matrix4 *m1, const struct matrix4 *m2)
+void matrix4_mul(struct matrix4 *dst, const struct matrix4 *m1,
+		 const struct matrix4 *m2)
 {
-	struct matrix4 transposed;
-	struct matrix4 out;
+	const struct vec4 *m1v = (const struct vec4 *)m1;
+	const float *m2f = (const float *)m2;
+	struct vec4 out[4];
+	int i, j;
 
-	matrix4_transpose(&transposed, m2);
+	for (i = 0; i < 4; i++) {
+		for (j = 0; j < 4; j++) {
+			struct vec4 temp;
+			vec4_set(&temp, m2f[j], m2f[j + 4], m2f[j + 8],
+				 m2f[j + 12]);
+			out[i].ptr[j] = vec4_dot(&m1v[i], &temp);
+		}
+	}
 
-	out.x.x = vec4_dot(&m1->x, &transposed.x);
-	out.x.y = vec4_dot(&m1->x, &transposed.y);
-	out.x.z = vec4_dot(&m1->x, &transposed.z);
-	out.x.w = vec4_dot(&m1->x, &transposed.t);
-	out.y.x = vec4_dot(&m1->y, &transposed.x);
-	out.y.y = vec4_dot(&m1->y, &transposed.y);
-	out.y.z = vec4_dot(&m1->y, &transposed.z);
-	out.y.w = vec4_dot(&m1->y, &transposed.t);
-	out.z.x = vec4_dot(&m1->z, &transposed.x);
-	out.z.y = vec4_dot(&m1->z, &transposed.y);
-	out.z.z = vec4_dot(&m1->z, &transposed.z);
-	out.z.w = vec4_dot(&m1->z, &transposed.t);
-	out.t.x = vec4_dot(&m1->t, &transposed.x);
-	out.t.y = vec4_dot(&m1->t, &transposed.y);
-	out.t.z = vec4_dot(&m1->t, &transposed.z);
-	out.t.w = vec4_dot(&m1->t, &transposed.t);
-
-	matrix4_copy(dst, &out);
+	matrix4_copy(dst, (struct matrix4 *)out);
 }
 
-void matrix4_mul_4x3_only(struct matrix4 *dst, const struct matrix4 *m1, const struct matrix4 *m2)
-{
-	struct matrix4 transposed;
-	struct vec4 x;
-	struct vec4 y;
-	struct vec4 z;
-
-	matrix4_transpose(&transposed, m2);
-
-	x.x = vec4_dot(&m1->x, &transposed.x);
-	x.y = vec4_dot(&m1->x, &transposed.y);
-	x.z = vec4_dot(&m1->x, &transposed.z);
-	x.w = vec4_dot(&m1->x, &transposed.t);
-	y.x = vec4_dot(&m1->y, &transposed.x);
-	y.y = vec4_dot(&m1->y, &transposed.y);
-	y.z = vec4_dot(&m1->y, &transposed.z);
-	y.w = vec4_dot(&m1->y, &transposed.t);
-	z.x = vec4_dot(&m1->z, &transposed.x);
-	z.y = vec4_dot(&m1->z, &transposed.y);
-	z.z = vec4_dot(&m1->z, &transposed.z);
-	z.w = vec4_dot(&m1->z, &transposed.t);
-
-	vec4_copy(&dst->x, &x);
-	vec4_copy(&dst->y, &y);
-	vec4_copy(&dst->z, &z);
-	vec4_copy(&dst->t, &m2->t);
-}
-
-static inline void get_3x3_submatrix(float *dst, const struct matrix4 *m, int i, int j)
+static inline void get_3x3_submatrix(float *dst, const struct matrix4 *m, int i,
+				     int j)
 {
 	const float *mf = (const float *)m;
 	int ti, tj, idst, jdst;
@@ -140,7 +106,8 @@ static inline void get_3x3_submatrix(float *dst, const struct matrix4 *m, int i,
 
 static inline float get_3x3_determinant(const float *m)
 {
-	return (m[0] * ((m[4] * m[8]) - (m[7] * m[5]))) - (m[1] * ((m[3] * m[8]) - (m[6] * m[5]))) +
+	return (m[0] * ((m[4] * m[8]) - (m[7] * m[5]))) -
+	       (m[1] * ((m[3] * m[8]) - (m[6] * m[5]))) +
 	       (m[2] * ((m[3] * m[7]) - (m[6] * m[4])));
 }
 
@@ -161,7 +128,8 @@ float matrix4_determinant(const struct matrix4 *m)
 	return result;
 }
 
-void matrix4_translate3v(struct matrix4 *dst, const struct matrix4 *m, const struct vec3 *v)
+void matrix4_translate3v(struct matrix4 *dst, const struct matrix4 *m,
+			 const struct vec3 *v)
 {
 	struct matrix4 temp;
 	vec4_set(&temp.x, 1.0f, 0.0f, 0.0f, 0.0f);
@@ -172,7 +140,8 @@ void matrix4_translate3v(struct matrix4 *dst, const struct matrix4 *m, const str
 	matrix4_mul(dst, m, &temp);
 }
 
-void matrix4_translate4v(struct matrix4 *dst, const struct matrix4 *m, const struct vec4 *v)
+void matrix4_translate4v(struct matrix4 *dst, const struct matrix4 *m,
+			 const struct vec4 *v)
 {
 	struct matrix4 temp;
 	vec4_set(&temp.x, 1.0f, 0.0f, 0.0f, 0.0f);
@@ -183,21 +152,24 @@ void matrix4_translate4v(struct matrix4 *dst, const struct matrix4 *m, const str
 	matrix4_mul(dst, m, &temp);
 }
 
-void matrix4_rotate(struct matrix4 *dst, const struct matrix4 *m, const struct quat *q)
+void matrix4_rotate(struct matrix4 *dst, const struct matrix4 *m,
+		    const struct quat *q)
 {
 	struct matrix4 temp;
 	matrix4_from_quat(&temp, q);
 	matrix4_mul(dst, m, &temp);
 }
 
-void matrix4_rotate_aa(struct matrix4 *dst, const struct matrix4 *m, const struct axisang *aa)
+void matrix4_rotate_aa(struct matrix4 *dst, const struct matrix4 *m,
+		       const struct axisang *aa)
 {
 	struct matrix4 temp;
 	matrix4_from_axisang(&temp, aa);
 	matrix4_mul(dst, m, &temp);
 }
 
-void matrix4_scale(struct matrix4 *dst, const struct matrix4 *m, const struct vec3 *v)
+void matrix4_scale(struct matrix4 *dst, const struct matrix4 *m,
+		   const struct vec3 *v)
 {
 	struct matrix4 temp;
 	vec4_set(&temp.x, v->x, 0.0f, 0.0f, 0.0f);
@@ -207,62 +179,55 @@ void matrix4_scale(struct matrix4 *dst, const struct matrix4 *m, const struct ve
 	matrix4_mul(dst, m, &temp);
 }
 
-void matrix4_translate3v_i(struct matrix4 *dst, const struct vec3 *v, const struct matrix4 *m)
+void matrix4_translate3v_i(struct matrix4 *dst, const struct vec3 *v,
+			   const struct matrix4 *m)
 {
-	struct matrix4 transposed;
-	struct vec4 v4;
-	struct vec4 t;
+	struct matrix4 temp;
+	vec4_set(&temp.x, 1.0f, 0.0f, 0.0f, 0.0f);
+	vec4_set(&temp.y, 0.0f, 1.0f, 0.0f, 0.0f);
+	vec4_set(&temp.z, 0.0f, 0.0f, 1.0f, 0.0f);
+	vec4_from_vec3(&temp.t, v);
 
-	vec4_from_vec3(&v4, v);
-	matrix4_transpose(&transposed, m);
-	t.x = vec4_dot(&v4, &transposed.x);
-	t.y = vec4_dot(&v4, &transposed.y);
-	t.z = vec4_dot(&v4, &transposed.z);
-	t.w = vec4_dot(&v4, &transposed.t);
-	vec4_copy(&dst->x, &m->x);
-	vec4_copy(&dst->y, &m->y);
-	vec4_copy(&dst->z, &m->z);
-	vec4_copy(&dst->t, &t);
+	matrix4_mul(dst, &temp, m);
 }
 
-void matrix4_translate4v_i(struct matrix4 *dst, const struct vec4 *v, const struct matrix4 *m)
+void matrix4_translate4v_i(struct matrix4 *dst, const struct vec4 *v,
+			   const struct matrix4 *m)
 {
-	struct matrix4 transposed;
-	struct vec4 t;
+	struct matrix4 temp;
+	vec4_set(&temp.x, 1.0f, 0.0f, 0.0f, 0.0f);
+	vec4_set(&temp.y, 0.0f, 1.0f, 0.0f, 0.0f);
+	vec4_set(&temp.z, 0.0f, 0.0f, 1.0f, 0.0f);
+	vec4_copy(&temp.t, v);
 
-	matrix4_transpose(&transposed, m);
-	t.x = vec4_dot(v, &transposed.x);
-	t.y = vec4_dot(v, &transposed.y);
-	t.z = vec4_dot(v, &transposed.z);
-	t.w = vec4_dot(v, &transposed.t);
-	vec4_copy(&dst->x, &m->x);
-	vec4_copy(&dst->y, &m->y);
-	vec4_copy(&dst->z, &m->z);
-	vec4_copy(&dst->t, &t);
+	matrix4_mul(dst, &temp, m);
 }
 
-void matrix4_rotate_i(struct matrix4 *dst, const struct quat *q, const struct matrix4 *m)
+void matrix4_rotate_i(struct matrix4 *dst, const struct quat *q,
+		      const struct matrix4 *m)
 {
 	struct matrix4 temp;
 	matrix4_from_quat(&temp, q);
-	matrix4_mul_4x3_only(dst, &temp, m);
+	matrix4_mul(dst, &temp, m);
 }
 
-void matrix4_rotate_aa_i(struct matrix4 *dst, const struct axisang *aa, const struct matrix4 *m)
+void matrix4_rotate_aa_i(struct matrix4 *dst, const struct axisang *aa,
+			 const struct matrix4 *m)
 {
 	struct matrix4 temp;
 	matrix4_from_axisang(&temp, aa);
-	matrix4_mul_4x3_only(dst, &temp, m);
+	matrix4_mul(dst, &temp, m);
 }
 
-void matrix4_scale_i(struct matrix4 *dst, const struct vec3 *v, const struct matrix4 *m)
+void matrix4_scale_i(struct matrix4 *dst, const struct vec3 *v,
+		     const struct matrix4 *m)
 {
 	struct matrix4 temp;
 	vec4_set(&temp.x, v->x, 0.0f, 0.0f, 0.0f);
 	vec4_set(&temp.y, 0.0f, v->y, 0.0f, 0.0f);
 	vec4_set(&temp.z, 0.0f, 0.0f, v->z, 0.0f);
 	vec4_set(&temp.t, 0.0f, 0.0f, 0.0f, 1.0f);
-	matrix4_mul_4x3_only(dst, &temp, m);
+	matrix4_mul(dst, &temp, m);
 }
 
 bool matrix4_inv(struct matrix4 *dst, const struct matrix4 *m)
@@ -287,7 +252,8 @@ bool matrix4_inv(struct matrix4 *dst, const struct matrix4 *m)
 		for (j = 0; j < 4; j++) {
 			sign = 1 - ((i + j) % 2) * 2;
 			get_3x3_submatrix(m3x3, m, i, j);
-			dstv[j].ptr[i] = get_3x3_determinant(m3x3) * (float)sign / det;
+			dstv[j].ptr[i] =
+				get_3x3_determinant(m3x3) * (float)sign / det;
 		}
 	}
 

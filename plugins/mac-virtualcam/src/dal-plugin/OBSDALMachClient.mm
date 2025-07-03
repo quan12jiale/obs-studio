@@ -12,7 +12,6 @@
 @interface OBSDALMachClient () <NSPortDelegate> {
     NSPort *_receivePort;
 }
-
 @end
 
 @implementation OBSDALMachClient

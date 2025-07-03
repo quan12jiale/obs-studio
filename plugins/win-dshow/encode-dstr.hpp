@@ -14,7 +14,9 @@ static inline void decode_dstr(struct dstr *str)
 	dstr_replace(str, "#22", "#");
 }
 
-static inline void EncodeDeviceId(struct dstr *encodedStr, const wchar_t *name_str, const wchar_t *path_str)
+static inline void EncodeDeviceId(struct dstr *encodedStr,
+				  const wchar_t *name_str,
+				  const wchar_t *path_str)
 {
 	DStr name;
 	DStr path;
@@ -30,7 +32,8 @@ static inline void EncodeDeviceId(struct dstr *encodedStr, const wchar_t *name_s
 	dstr_cat_dstr(encodedStr, path);
 }
 
-static inline bool DecodeDeviceDStr(DStr &name, DStr &path, const char *device_id)
+static inline bool DecodeDeviceDStr(DStr &name, DStr &path,
+				    const char *device_id)
 {
 	const char *path_str;
 

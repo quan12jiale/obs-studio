@@ -81,7 +81,7 @@
             return sizeof(Boolean);
         case kCMIODevicePropertyLinkedCoreAudioDeviceUID:
             return sizeof(CFStringRef);
-        case kCMIODevicePropertyDeviceControl:
+        case kCMIODevicePropertyDeviceMaster:
             return sizeof(pid_t);
         default:
             break;
@@ -178,7 +178,7 @@
             *static_cast<Boolean *>(data) = false;
             *dataUsed = sizeof(Boolean);
             break;
-        case kCMIODevicePropertyDeviceControl:
+        case kCMIODevicePropertyDeviceMaster:
             *static_cast<pid_t *>(data) = self.masterPid;
             *dataUsed = sizeof(pid_t);
             break;
@@ -209,7 +209,7 @@
         case kCMIODevicePropertyExcludeNonDALAccess:
         case kCMIODevicePropertyCanProcessAVCCommand:
         case kCMIODevicePropertyCanProcessRS422Command:
-        case kCMIODevicePropertyDeviceControl:
+        case kCMIODevicePropertyDeviceMaster:
             return true;
         case kCMIODevicePropertyStreamConfiguration:
         case kCMIODevicePropertyLinkedCoreAudioDeviceUID:
@@ -244,7 +244,7 @@
         case kCMIODevicePropertyLinkedCoreAudioDeviceUID:
             return false;
         case kCMIODevicePropertyExcludeNonDALAccess:
-        case kCMIODevicePropertyDeviceControl:
+        case kCMIODevicePropertyDeviceMaster:
             return true;
         default:
             return false;
@@ -261,7 +261,7 @@
         case kCMIODevicePropertyExcludeNonDALAccess:
             self.excludeNonDALAccess = (*static_cast<const UInt32 *>(data) != 0);
             break;
-        case kCMIODevicePropertyDeviceControl:
+        case kCMIODevicePropertyDeviceMaster:
             self.masterPid = *static_cast<const pid_t *>(data);
             break;
         default:

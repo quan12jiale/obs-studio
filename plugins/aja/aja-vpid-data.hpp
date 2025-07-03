@@ -30,7 +30,6 @@ public:
 
 	VPIDStandard Standard() const;
 	VPIDSampling Sampling() const;
-	VPIDBitDepth BitDepth() const;
 
 private:
 	ULWord mVpidA;
@@ -39,8 +38,6 @@ private:
 	VPIDSampling mSamplingA;
 	VPIDStandard mStandardB;
 	VPIDSampling mSamplingB;
-	VPIDBitDepth mBitDepthA;
-	VPIDBitDepth mBitDepthB;
 };
 
 using VPIDDataList = std::vector<VPIDData>;

@@ -30,7 +30,8 @@ struct reg_dword {
 	DWORD return_value;
 };
 
-EXPORT void get_reg_dword(HKEY hkey, LPCWSTR sub_key, LPCWSTR value_name, struct reg_dword *info);
+EXPORT void get_reg_dword(HKEY hkey, LPCWSTR sub_key, LPCWSTR value_name,
+			  struct reg_dword *info);
 
 #ifdef __cplusplus
 }

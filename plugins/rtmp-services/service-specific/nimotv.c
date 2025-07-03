@@ -14,7 +14,8 @@ struct nimotv_mem_struct {
 static char *current_ingest = NULL;
 static time_t last_time = -1;
 
-static size_t nimotv_write_cb(void *contents, size_t size, size_t nmemb, void *userp)
+static size_t nimotv_write_cb(void *contents, size_t size, size_t nmemb,
+			      void *userp)
 {
 	size_t realsize = size * nmemb;
 	struct nimotv_mem_struct *mem = (struct nimotv_mem_struct *)userp;
@@ -62,7 +63,9 @@ const char *nimotv_get_ingest(const char *key)
 		time_t now = time(NULL);
 		double diff = difftime(now, last_time);
 		if (diff < 2) {
-			blog(LOG_INFO, "nimotv_get_ingest: returning ingest from cache: %s", current_ingest);
+			blog(LOG_INFO,
+			     "nimotv_get_ingest: returning ingest from cache: %s",
+			     current_ingest);
 			return current_ingest;
 		}
 	}
@@ -95,7 +98,9 @@ const char *nimotv_get_ingest(const char *key)
 	dstr_free(&uri);
 
 	if (res != CURLE_OK) {
-		blog(LOG_WARNING, "nimotv_get_ingest: curl_easy_perform() failed: %s", curl_easy_strerror(res));
+		blog(LOG_WARNING,
+		     "nimotv_get_ingest: curl_easy_perform() failed: %s",
+		     curl_easy_strerror(res));
 		curl_easy_cleanup(curl_handle);
 		free(chunk.memory);
 		return NULL;
@@ -103,7 +108,9 @@ const char *nimotv_get_ingest(const char *key)
 
 	curl_easy_getinfo(curl_handle, CURLINFO_RESPONSE_CODE, &response_code);
 	if (response_code != 200) {
-		blog(LOG_WARNING, "nimotv_get_ingest: curl_easy_perform() returned code: %ld", response_code);
+		blog(LOG_WARNING,
+		     "nimotv_get_ingest: curl_easy_perform() returned code: %ld",
+		     response_code);
 		curl_easy_cleanup(curl_handle);
 		free(chunk.memory);
 		return NULL;
@@ -112,7 +119,8 @@ const char *nimotv_get_ingest(const char *key)
 	curl_easy_cleanup(curl_handle);
 
 	if (chunk.size == 0) {
-		blog(LOG_WARNING, "nimotv_get_ingest: curl_easy_perform() returned empty response");
+		blog(LOG_WARNING,
+		     "nimotv_get_ingest: curl_easy_perform() returned empty response");
 		free(chunk.memory);
 		return NULL;
 	}
@@ -125,7 +133,8 @@ const char *nimotv_get_ingest(const char *key)
 	last_time = time(NULL);
 
 	free(chunk.memory);
-	blog(LOG_INFO, "nimotv_get_ingest: returning ingest: %s", current_ingest);
+	blog(LOG_INFO, "nimotv_get_ingest: returning ingest: %s",
+	     current_ingest);
 
 	return current_ingest;
 }

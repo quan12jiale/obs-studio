@@ -243,7 +243,6 @@ OSStatus HardwarePlugIn_ObjectSetPropertyData(CMIOHardwarePlugInRef self, CMIOOb
 }
 
 #pragma mark CMIOStream Operations
-
 OSStatus HardwarePlugIn_StreamCopyBufferQueue(CMIOHardwarePlugInRef self, CMIOStreamID streamID,
                                               CMIODeviceStreamQueueAlteredProc queueAlteredProc,
                                               void *queueAlteredRefCon, CMSimpleQueueRef *queue)
@@ -263,7 +262,6 @@ OSStatus HardwarePlugIn_StreamCopyBufferQueue(CMIOHardwarePlugInRef self, CMIOSt
 }
 
 #pragma mark CMIODevice Operations
-
 OSStatus HardwarePlugIn_DeviceStartStream(CMIOHardwarePlugInRef self, CMIODeviceID deviceID, CMIOStreamID streamID)
 {
     DLogFunc(@"self=%p device=%d stream=%d", self, deviceID, streamID);

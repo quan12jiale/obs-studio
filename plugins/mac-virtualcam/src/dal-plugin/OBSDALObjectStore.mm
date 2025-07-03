@@ -55,7 +55,7 @@
             return @"kCMIODevicePropertyStreams";
         case kCMIODevicePropertyStreamConfiguration:
             return @"kCMIODevicePropertyStreamConfiguration";
-        case kCMIODevicePropertyDeviceControl:
+        case kCMIODevicePropertyDeviceMaster:
             return @"kCMIODevicePropertyDeviceMaster";
         case kCMIODevicePropertyExcludeNonDALAccess:
             return @"kCMIODevicePropertyExcludeNonDALAccess";
@@ -192,7 +192,7 @@
             return @"kCMIOControlPropertyElement";
         case kCMIOControlPropertyVariant:
             return @"kCMIOControlPropertyVariant";
-        case kCMIOHardwarePropertyProcessIsMain:
+        case kCMIOHardwarePropertyProcessIsMaster:
             return @"kCMIOHardwarePropertyProcessIsMaster";
         case kCMIOHardwarePropertyIsInitingOrExiting:
             return @"kCMIOHardwarePropertyIsInitingOrExiting";

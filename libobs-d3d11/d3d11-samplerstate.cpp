@@ -20,7 +20,8 @@
 
 #include "d3d11-subsystem.hpp"
 
-static inline D3D11_TEXTURE_ADDRESS_MODE ConvertGSAddressMode(gs_address_mode mode)
+static inline D3D11_TEXTURE_ADDRESS_MODE
+ConvertGSAddressMode(gs_address_mode mode)
 {
 	switch (mode) {
 	case GS_ADDRESS_WRAP:
@@ -64,7 +65,8 @@ static inline D3D11_FILTER ConvertGSFilter(gs_sample_filter filter)
 	return D3D11_FILTER_MIN_MAG_MIP_POINT;
 }
 
-gs_sampler_state::gs_sampler_state(gs_device_t *device, const gs_sampler_info *info)
+gs_sampler_state::gs_sampler_state(gs_device_t *device,
+				   const gs_sampler_info *info)
 	: gs_obj(device, gs_type::gs_sampler_state),
 	  info(*info)
 {

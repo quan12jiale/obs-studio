@@ -1,9 +1,12 @@
 [CmdletBinding()]
 param(
-    [ValidateSet('x64', 'arm64')]
+    [ValidateSet('x64')]
     [string] $Target = 'x64',
     [ValidateSet('Debug', 'RelWithDebInfo', 'Release', 'MinSizeRel')]
-    [string] $Configuration = 'RelWithDebInfo'
+    [string] $Configuration = 'RelWithDebInfo',
+    [switch] $SkipAll,
+    [switch] $SkipBuild,
+    [switch] $SkipDeps
 )
 
 $ErrorActionPreference = 'Stop'
@@ -11,10 +14,6 @@ $ErrorActionPreference = 'Stop'
 if ( $DebugPreference -eq 'Continue' ) {
     $VerbosePreference = 'Continue'
     $InformationPreference = 'Continue'
-}
-
-if ( $env:CI -eq $null ) {
-    throw "Build-Windows.ps1 requires CI environment"
 }
 
 if ( ! ( [System.Environment]::Is64BitOperatingSystem ) ) {
@@ -47,48 +46,56 @@ function Build {
 
     $BuildSpec = Get-Content -Path ${BuildSpecFile} -Raw | ConvertFrom-Json
 
-    Install-BuildDependencies -WingetFile "${ScriptHome}/.Wingetfile"
+    if ( ! $SkipDeps ) {
+        Install-BuildDependencies -WingetFile "${ScriptHome}/.Wingetfile"
+    }
 
     Push-Location -Stack BuildTemp
-    Ensure-Location $ProjectRoot
+    if ( ! ( ( $SkipAll ) -or ( $SkipBuild ) ) ) {
+        Ensure-Location $ProjectRoot
 
-    $CmakeArgs = @('--preset', "windows-ci-${Target}")
+        $Preset = "windows-$(if ( $env:CI -ne $null ) { 'ci-' })${Target}"
+        $CmakeArgs = @(
+            '--preset', $Preset
+        )
 
-    # Required at the very least until OBS Studio updates to Qt 6.8+, pending review of Qt's build options for
-    # Windows ARM64.
-    if ( $Target -eq 'arm64' ) {
-        $QtDependencyVersion = $BuildSpec.dependencies.qt6.version
+        $CmakeBuildArgs = @('--build')
+        $CmakeInstallArgs = @()
 
-        $CmakeArgs += @("-DQT_HOST_PATH=${ProjectRoot}\.deps\obs-deps-qt6-${QtDependencyVersion}-x64")
+        if ( ( $env:CI -ne $null ) -and ( $env:CCACHE_CONFIGPATH -ne $null ) ) {
+            $CmakeArgs += @(
+                "-DENABLE_CCACHE:BOOL=TRUE"
+            )
+        }
+
+        if ( $VerbosePreference -eq 'Continue' ) {
+            $CmakeBuildArgs += ('--verbose')
+            $CmakeInstallArgs += ('--verbose')
+        }
+
+        if ( $DebugPreference -eq 'Continue' ) {
+            $CmakeArgs += ('--debug-output')
+        }
+
+        $CmakeBuildArgs += @(
+            '--preset', "windows-${Target}"
+            '--config', $Configuration
+            '--parallel'
+            '--', '/consoleLoggerParameters:Summary', '/noLogo'
+        )
+
+        $CmakeInstallArgs += @(
+            '--install', "build_${Target}"
+            '--prefix', "${ProjectRoot}/build_${Target}/install"
+            '--config', $Configuration
+        )
+
+        Log-Group "Configuring obs-studio..."
+        Invoke-External cmake @CmakeArgs
+
+        Log-Group "Building obs-studio..."
+        Invoke-External cmake @CmakeBuildArgs
     }
-
-    $CmakeBuildArgs = @('--build')
-    $CmakeInstallArgs = @()
-
-    if ( $DebugPreference -eq 'Continue' ) {
-        $CmakeArgs += ('--debug-output')
-        $CmakeBuildArgs += ('--verbose')
-        $CmakeInstallArgs += ('--verbose')
-    }
-
-    $CmakeBuildArgs += @(
-        '--preset', "windows-${Target}"
-        '--config', $Configuration
-        '--parallel'
-        '--', '/consoleLoggerParameters:Summary', '/noLogo'
-    )
-
-    $CmakeInstallArgs += @(
-        '--install', "build_${Target}"
-        '--prefix', "${ProjectRoot}/build_${Target}/install"
-        '--config', $Configuration
-    )
-
-    Log-Group "Configuring obs-studio..."
-    Invoke-External cmake @CmakeArgs
-
-    Log-Group "Building obs-studio..."
-    Invoke-External cmake @CmakeBuildArgs
 
     Log-Group "Installing obs-studio..."
     Invoke-External cmake @CmakeInstallArgs

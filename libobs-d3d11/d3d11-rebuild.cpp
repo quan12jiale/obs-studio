@@ -34,9 +34,12 @@ void gs_index_buffer::Rebuild(ID3D11Device *dev)
 void gs_texture_2d::RebuildSharedTextureFallback()
 {
 	static const gs_color_format format = GS_BGRA;
-	static const DXGI_FORMAT dxgi_format_resource = ConvertGSTextureFormatResource(format);
-	static const DXGI_FORMAT dxgi_format_view = ConvertGSTextureFormatView(format);
-	static const DXGI_FORMAT dxgi_format_view_linear = ConvertGSTextureFormatViewLinear(format);
+	static const DXGI_FORMAT dxgi_format_resource =
+		ConvertGSTextureFormatResource(format);
+	static const DXGI_FORMAT dxgi_format_view =
+		ConvertGSTextureFormatView(format);
+	static const DXGI_FORMAT dxgi_format_view_linear =
+		ConvertGSTextureFormatViewLinear(format);
 
 	td = {};
 	td.Width = 2;
@@ -69,16 +72,19 @@ void gs_texture_2d::Rebuild(ID3D11Device *dev)
 {
 	HRESULT hr;
 	if (isShared) {
-		hr = dev->OpenSharedResource((HANDLE)(uintptr_t)sharedHandle, __uuidof(ID3D11Texture2D),
+		hr = dev->OpenSharedResource((HANDLE)(uintptr_t)sharedHandle,
+					     __uuidof(ID3D11Texture2D),
 					     (void **)&texture);
 		if (FAILED(hr)) {
-			blog(LOG_WARNING, "Failed to rebuild shared texture: 0x%08lX", hr);
+			blog(LOG_WARNING,
+			     "Failed to rebuild shared texture: 0x%08lX", hr);
 			RebuildSharedTextureFallback();
 		}
 	}
 
 	if (!isShared) {
-		hr = dev->CreateTexture2D(&td, data.size() ? srd.data() : nullptr, &texture);
+		hr = dev->CreateTexture2D(
+			&td, data.size() ? srd.data() : nullptr, &texture);
 		if (FAILED(hr))
 			throw HRError("Failed to create 2D texture", hr);
 	}
@@ -90,7 +96,8 @@ void gs_texture_2d::Rebuild(ID3D11Device *dev)
 	if (viewDesc.Format == viewDescLinear.Format) {
 		shaderResLinear = shaderRes;
 	} else {
-		hr = dev->CreateShaderResourceView(texture, &viewDescLinear, &shaderResLinear);
+		hr = dev->CreateShaderResourceView(texture, &viewDescLinear,
+						   &shaderResLinear);
 		if (FAILED(hr))
 			throw HRError("Failed to create linear SRV", hr);
 	}
@@ -99,7 +106,8 @@ void gs_texture_2d::Rebuild(ID3D11Device *dev)
 		InitRenderTargets();
 
 	if (isGDICompatible) {
-		hr = texture->QueryInterface(__uuidof(IDXGISurface1), (void **)&gdiSurface);
+		hr = texture->QueryInterface(__uuidof(IDXGISurface1),
+					     (void **)&gdiSurface);
 		if (FAILED(hr))
 			throw HRError("Failed to create GDI surface", hr);
 	}
@@ -130,7 +138,8 @@ void gs_texture_2d::RebuildPaired_Y(ID3D11Device *dev)
 	if (viewDesc.Format == viewDescLinear.Format) {
 		shaderResLinear = shaderRes;
 	} else {
-		hr = dev->CreateShaderResourceView(texture, &viewDescLinear, &shaderResLinear);
+		hr = dev->CreateShaderResourceView(texture, &viewDescLinear,
+						   &shaderResLinear);
 		if (FAILED(hr))
 			throw HRError("Failed to create linear Y SRV", hr);
 	}
@@ -164,7 +173,8 @@ void gs_texture_2d::RebuildPaired_UV(ID3D11Device *dev)
 	if (viewDesc.Format == viewDescLinear.Format) {
 		shaderResLinear = shaderRes;
 	} else {
-		hr = dev->CreateShaderResourceView(texture, &viewDescLinear, &shaderResLinear);
+		hr = dev->CreateShaderResourceView(texture, &viewDescLinear,
+						   &shaderResLinear);
 		if (FAILED(hr))
 			throw HRError("Failed to create linear UV SRV", hr);
 	}
@@ -202,13 +212,15 @@ void gs_sampler_state::Rebuild(ID3D11Device *dev)
 void gs_vertex_shader::Rebuild(ID3D11Device *dev)
 {
 	HRESULT hr;
-	hr = dev->CreateVertexShader(data.data(), data.size(), nullptr, &shader);
+	hr = dev->CreateVertexShader(data.data(), data.size(), nullptr,
+				     &shader);
 	if (FAILED(hr))
 		throw HRError("Failed to create vertex shader", hr);
 
 	const UINT layoutSize = (UINT)layoutData.size();
 	if (layoutSize > 0) {
-		hr = dev->CreateInputLayout(layoutData.data(), layoutSize, data.data(), data.size(), &layout);
+		hr = dev->CreateInputLayout(layoutData.data(), layoutSize,
+					    data.data(), data.size(), &layout);
 		if (FAILED(hr))
 			throw HRError("Failed to create input layout", hr);
 	}
@@ -281,9 +293,12 @@ void gs_timer_range::Rebuild(ID3D11Device *dev)
 void gs_texture_3d::RebuildSharedTextureFallback()
 {
 	static const gs_color_format format = GS_BGRA;
-	static const DXGI_FORMAT dxgi_format_resource = ConvertGSTextureFormatResource(format);
-	static const DXGI_FORMAT dxgi_format_view = ConvertGSTextureFormatView(format);
-	static const DXGI_FORMAT dxgi_format_view_linear = ConvertGSTextureFormatViewLinear(format);
+	static const DXGI_FORMAT dxgi_format_resource =
+		ConvertGSTextureFormatResource(format);
+	static const DXGI_FORMAT dxgi_format_view =
+		ConvertGSTextureFormatView(format);
+	static const DXGI_FORMAT dxgi_format_view_linear =
+		ConvertGSTextureFormatViewLinear(format);
 
 	td = {};
 	td.Width = 2;
@@ -317,16 +332,19 @@ void gs_texture_3d::Rebuild(ID3D11Device *dev)
 {
 	HRESULT hr;
 	if (isShared) {
-		hr = dev->OpenSharedResource((HANDLE)(uintptr_t)sharedHandle, __uuidof(ID3D11Texture3D),
+		hr = dev->OpenSharedResource((HANDLE)(uintptr_t)sharedHandle,
+					     __uuidof(ID3D11Texture3D),
 					     (void **)&texture);
 		if (FAILED(hr)) {
-			blog(LOG_WARNING, "Failed to rebuild shared texture: 0x%08lX", hr);
+			blog(LOG_WARNING,
+			     "Failed to rebuild shared texture: 0x%08lX", hr);
 			RebuildSharedTextureFallback();
 		}
 	}
 
 	if (!isShared) {
-		hr = dev->CreateTexture3D(&td, data.size() ? srd.data() : nullptr, &texture);
+		hr = dev->CreateTexture3D(
+			&td, data.size() ? srd.data() : nullptr, &texture);
 		if (FAILED(hr))
 			throw HRError("Failed to create 3D texture", hr);
 	}
@@ -338,7 +356,8 @@ void gs_texture_3d::Rebuild(ID3D11Device *dev)
 	if (viewDesc.Format == viewDescLinear.Format) {
 		shaderResLinear = shaderRes;
 	} else {
-		hr = dev->CreateShaderResourceView(texture, &viewDescLinear, &shaderResLinear);
+		hr = dev->CreateShaderResourceView(texture, &viewDescLinear,
+						   &shaderResLinear);
 		if (FAILED(hr))
 			throw HRError("Failed to create linear 3D SRV", hr);
 	}
@@ -461,9 +480,11 @@ try {
 	InitAdapter(adpIdx);
 
 	uint32_t createFlags = D3D11_CREATE_DEVICE_BGRA_SUPPORT;
-	hr = D3D11CreateDevice(adapter, D3D_DRIVER_TYPE_UNKNOWN, nullptr, createFlags, featureLevels,
-			       sizeof(featureLevels) / sizeof(D3D_FEATURE_LEVEL), D3D11_SDK_VERSION, &device, nullptr,
-			       &context);
+	hr = D3D11CreateDevice(adapter, D3D_DRIVER_TYPE_UNKNOWN, nullptr,
+			       createFlags, featureLevels,
+			       sizeof(featureLevels) /
+				       sizeof(D3D_FEATURE_LEVEL),
+			       D3D11_SDK_VERSION, &device, nullptr, &context);
 	if (FAILED(hr))
 		throw HRError("Failed to create device", hr);
 

@@ -4,7 +4,13 @@
 #include <pthread.h>
 
 #import <AvailabilityMacros.h>
+
+#if __MAC_OS_X_VERSION_MAX_ALLOWED >= 140000
 #import <CoreGraphics/CGDisplayStream.h>
+#else
+#import "CGDisplayStream.h"
+#endif
+
 #import <Cocoa/Cocoa.h>
 
 #include "window-utils.h"
@@ -280,7 +286,27 @@ static void *display_capture_create(obs_data_t *settings, obs_source_t *source)
     init_window(&dc->window, settings);
     load_crop(dc, settings);
 
-    dc->display = get_display_migrate_settings(settings);
+    bool legacy_display_id = obs_data_has_user_value(settings, "display");
+    if (legacy_display_id) {
+        CGDirectDisplayID display_id = (CGDirectDisplayID) obs_data_get_int(settings, "display");
+        CFUUIDRef display_uuid = CGDisplayCreateUUIDFromDisplayID(display_id);
+        CFStringRef uuid_string = CFUUIDCreateString(kCFAllocatorDefault, display_uuid);
+        obs_data_set_string(settings, "display_uuid", CFStringGetCStringPtr(uuid_string, kCFStringEncodingUTF8));
+        obs_data_erase(settings, "display");
+        CFRelease(uuid_string);
+        CFRelease(display_uuid);
+    }
+
+    const char *display_uuid = obs_data_get_string(settings, "display_uuid");
+    if (display_uuid) {
+        CFStringRef uuid_string = CFStringCreateWithCString(kCFAllocatorDefault, display_uuid, kCFStringEncodingUTF8);
+        CFUUIDRef uuid_ref = CFUUIDCreateFromString(kCFAllocatorDefault, uuid_string);
+        dc->display = CGDisplayGetDisplayIDFromUUID(uuid_ref);
+        CFRelease(uuid_string);
+        CFRelease(uuid_ref);
+    } else {
+        dc->display = CGMainDisplayID();
+    }
 
     pthread_mutex_init(&dc->mutex, NULL);
 
@@ -535,7 +561,12 @@ static void display_capture_update(void *data, obs_data_t *settings)
     if (requires_window(dc->crop))
         update_window(&dc->window, settings);
 
-    CGDirectDisplayID display = get_display_migrate_settings(settings);
+    CFStringRef uuid_string = CFStringCreateWithCString(
+        kCFAllocatorDefault, obs_data_get_string(settings, "display_uuid"), kCFStringEncodingUTF8);
+    CFUUIDRef display_uuid = CFUUIDCreateFromString(kCFAllocatorDefault, uuid_string);
+    CGDirectDisplayID display = CGDisplayGetDisplayIDFromUUID(display_uuid);
+    CFRelease(uuid_string);
+    CFRelease(display_uuid);
 
     bool show_cursor = obs_data_get_bool(settings, "show_cursor");
     if (dc->display == display && dc->hide_cursor != show_cursor)
@@ -600,10 +631,10 @@ static obs_properties_t *display_capture_properties(void *unused)
                                                      BOOL *_Nonnull stop __unused) {
         char dimension_buffer[4][12];
         char name_buffer[256];
-        snprintf(dimension_buffer[0], sizeof(dimension_buffer[0]), "%u", (uint32_t) [screen frame].size.width);
-        snprintf(dimension_buffer[1], sizeof(dimension_buffer[0]), "%u", (uint32_t) [screen frame].size.height);
-        snprintf(dimension_buffer[2], sizeof(dimension_buffer[0]), "%d", (int32_t) [screen frame].origin.x);
-        snprintf(dimension_buffer[3], sizeof(dimension_buffer[0]), "%d", (int32_t) [screen frame].origin.y);
+        snprintf(dimension_buffer[0], sizeof(dimension_buffer[0]), "%u", (uint32_t)[screen frame].size.width);
+        snprintf(dimension_buffer[1], sizeof(dimension_buffer[0]), "%u", (uint32_t)[screen frame].size.height);
+        snprintf(dimension_buffer[2], sizeof(dimension_buffer[0]), "%d", (int32_t)[screen frame].origin.x);
+        snprintf(dimension_buffer[3], sizeof(dimension_buffer[0]), "%d", (int32_t)[screen frame].origin.y);
 
         snprintf(name_buffer, sizeof(name_buffer), "%.200s: %.12sx%.12s @ %.12s,%.12s",
                  [[screen localizedName] UTF8String], dimension_buffer[0], dimension_buffer[1], dimension_buffer[2],

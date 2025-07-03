@@ -3,12 +3,15 @@
 #include <libavcodec/avcodec.h>
 #include <libavutil/pixdesc.h>
 
-static inline int64_t rescale_ts(int64_t val, AVCodecContext *context, AVRational new_base)
+static inline int64_t rescale_ts(int64_t val, AVCodecContext *context,
+				 AVRational new_base)
 {
-	return av_rescale_q_rnd(val, context->time_base, new_base, AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX);
+	return av_rescale_q_rnd(val, context->time_base, new_base,
+				AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX);
 }
 
-static inline enum AVPixelFormat obs_to_ffmpeg_video_format(enum video_format format)
+static inline enum AVPixelFormat
+obs_to_ffmpeg_video_format(enum video_format format)
 {
 	switch (format) {
 	case VIDEO_FORMAT_I444:
@@ -45,16 +48,20 @@ static inline enum AVPixelFormat obs_to_ffmpeg_video_format(enum video_format fo
 		return AV_PIX_FMT_YUVA422P;
 	case VIDEO_FORMAT_YUVA:
 		return AV_PIX_FMT_YUVA444P;
+#if LIBAVUTIL_BUILD >= AV_VERSION_INT(56, 31, 100)
 	case VIDEO_FORMAT_YA2L:
 		return AV_PIX_FMT_YUVA444P12LE;
+#endif
 	case VIDEO_FORMAT_I010:
 		return AV_PIX_FMT_YUV420P10LE;
 	case VIDEO_FORMAT_P010:
 		return AV_PIX_FMT_P010LE;
+#if LIBAVUTIL_BUILD >= AV_VERSION_INT(57, 17, 100)
 	case VIDEO_FORMAT_P216:
 		return AV_PIX_FMT_P216LE;
 	case VIDEO_FORMAT_P416:
 		return AV_PIX_FMT_P416LE;
+#endif
 	case VIDEO_FORMAT_NONE:
 	case VIDEO_FORMAT_AYUV:
 	default:
@@ -62,7 +69,9 @@ static inline enum AVPixelFormat obs_to_ffmpeg_video_format(enum video_format fo
 	}
 }
 
-static inline enum AVChromaLocation determine_chroma_location(enum AVPixelFormat pix_fmt, enum AVColorSpace colorspace)
+static enum AVChromaLocation
+determine_chroma_location(enum AVPixelFormat pix_fmt,
+			  enum AVColorSpace colorspace)
 {
 	const AVPixFmtDescriptor *const desc = av_pix_fmt_desc_get(pix_fmt);
 	if (desc) {
@@ -82,7 +91,9 @@ static inline enum AVChromaLocation determine_chroma_location(enum AVPixelFormat
 		case 1:
 			if (log_chroma_w == 1) {
 				/* 4:2:0 */
-				return (colorspace == AVCOL_SPC_BT2020_NCL) ? AVCHROMA_LOC_TOPLEFT : AVCHROMA_LOC_LEFT;
+				return (colorspace == AVCOL_SPC_BT2020_NCL)
+					       ? AVCHROMA_LOC_TOPLEFT
+					       : AVCHROMA_LOC_LEFT;
 			}
 		}
 	}
@@ -90,7 +101,8 @@ static inline enum AVChromaLocation determine_chroma_location(enum AVPixelFormat
 	return AVCHROMA_LOC_UNSPECIFIED;
 }
 
-static inline enum audio_format convert_ffmpeg_sample_format(enum AVSampleFormat format)
+static inline enum audio_format
+convert_ffmpeg_sample_format(enum AVSampleFormat format)
 {
 	switch (format) {
 	case AV_SAMPLE_FMT_U8:

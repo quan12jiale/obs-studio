@@ -315,31 +315,38 @@ RTMP_TLS_LoadCerts(RTMP *r) {
     CertFreeCertificateContext(pCertContext);
     CertCloseStore(hCertStore, 0);
 #elif defined(__APPLE__)
-    CFArrayRef anchors;
-    OSStatus code = SecTrustCopyAnchorCertificates(&anchors);
+    CFTypeRef keys[4] = {kSecClass, kSecMatchLimit, kSecReturnAttributes,
+                 kSecReturnData};
+
+    CFTypeRef values[4] = {kSecClassCertificate, kSecMatchLimitAll,
+                   kCFBooleanFalse, kCFBooleanTrue};
+    CFDictionaryRef query =
+        CFDictionaryCreate(kCFAllocatorDefault, keys, values, 4,
+                   &kCFTypeDictionaryKeyCallBacks,
+                   &kCFTypeDictionaryValueCallBacks);
+
+    CFTypeRef result;
+
+    OSStatus code = SecItemCopyMatching(query, &result);
 
     if (code != noErr) {
         goto error;
     }
 
-    for (CFIndex i = 0; i < CFArrayGetCount(anchors); i++) {
-        SecCertificateRef cert = (SecCertificateRef)CFArrayGetValueAtIndex(anchors, i);
+    for (CFIndex i = 0; i < CFArrayGetCount(result); i++) {
+        CFDataRef data_ref = CFArrayGetValueAtIndex(result, i);
 
-        CFDataRef der_data = SecCertificateCopyData(cert);
-
-        const UInt8 *data = CFDataGetBytePtr(der_data);
-        size_t length = CFDataGetLength(der_data);
+        const UInt8 *data = CFDataGetBytePtr(data_ref);
+        size_t length = CFDataGetLength(data_ref);
 
         if (data && length > 0) {
             mbedtls_x509_crt_parse_der(chain, data, length);
         }
-
-        CFRelease(der_data);
     }
 
-    CFRelease(anchors);
+    CFRelease(result);
 
-#elif defined(__linux__) || defined(__FreeBSD__)
+#elif defined(__linux__)
     if (mbedtls_x509_crt_parse_path(chain, "/etc/ssl/certs/") < 0) {
         RTMP_Log(RTMP_LOGERROR, "mbedtls_x509_crt_parse_path: Couldn't parse "
             "/etc/ssl/certs");
@@ -4123,17 +4130,8 @@ RTMP_SendPacket(RTMP *r, RTMPPacket *packet, int queue)
                 && packet->m_headerType == RTMP_PACKET_SIZE_MEDIUM)
             packet->m_headerType = RTMP_PACKET_SIZE_SMALL;
 
-        /* Per https://rtmp.veriskope.com/docs/spec/#53124-type-3 type 3 chunks/RTMP_PACKET_SIZE_MINIMUM
-         * always use the previously sent (delta) timestamp as their _delta_ timestamp, so we need to inspect
-         * whatever was previously sent, rather than just looking at the previous packet's absolute timestamp.
-         *
-         * The type 3 chunks/RTMP_PACKET_SIZE_MINIMUM packets produced here specify the beginning of a new
-         * message as opposed to message continuation type 3 chunks that are handled in the loop further down
-         * in this function.
-         */
-        uint32_t delta = packet->m_nTimeStamp - prevPacket->m_nTimeStamp;
-        if (delta == prevPacket->m_nLastWireTimeStamp
-            && packet->m_headerType == RTMP_PACKET_SIZE_SMALL)
+        if (prevPacket->m_nTimeStamp == packet->m_nTimeStamp
+                && packet->m_headerType == RTMP_PACKET_SIZE_SMALL)
             packet->m_headerType = RTMP_PACKET_SIZE_MINIMUM;
         last = prevPacket->m_nTimeStamp;
     }
@@ -4149,7 +4147,6 @@ RTMP_SendPacket(RTMP *r, RTMPPacket *packet, int queue)
     hSize = nSize;
     cSize = 0;
     t = packet->m_nTimeStamp - last;
-    packet->m_nLastWireTimeStamp = t;
 
     if (packet->m_body)
     {
@@ -4260,7 +4257,6 @@ RTMP_SendPacket(RTMP *r, RTMPPacket *packet, int queue)
         buffer += nChunkSize;
         hSize = 0;
 
-        // prepare to send off remaining data in Type 3 chunks
         if (nSize > 0)
         {
             header = buffer - 1;
@@ -4270,11 +4266,6 @@ RTMP_SendPacket(RTMP *r, RTMPPacket *packet, int queue)
                 header -= cSize;
                 hSize += cSize;
             }
-            if (t >= 0xffffff)
-            {
-                hSize += 4;
-                header -= 4;
-            }
             *header = (0xc0 | c);
             if (cSize)
             {
@@ -4283,8 +4274,6 @@ RTMP_SendPacket(RTMP *r, RTMPPacket *packet, int queue)
                 if (cSize == 2)
                     header[2] = tmp >> 8;
             }
-            if (t >= 0xffffff)
-                AMF_EncodeInt32(header+hSize-4, header+hSize, t);
         }
     }
     if (tbuf)

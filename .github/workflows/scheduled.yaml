@@ -1,7 +1,6 @@
 name: Scheduled
 run-name: Scheduled Repository Actions ⏰
 on:
-  workflow_dispatch:
   schedule:
     - cron: 17 0 * * *
 permissions:
@@ -13,13 +12,11 @@ jobs:
   services-availability:
     name: Check Service Availability 🛜
     if: github.repository_owner == 'obsproject'
-    runs-on: macos-15
+    runs-on: macos-13
     permissions:
       checks: write
-      contents: write
-      pull-requests: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v3
         with:
           fetch-depth: 0
       - name: Set Up Homebrew 🍺
@@ -28,15 +25,13 @@ jobs:
         uses: ./.github/actions/services-validator
         with:
           repositorySecret: ${{ secrets.GITHUB_TOKEN }}
-          checkApiSecret: ${{ secrets.CHECK_SERVERS_API_KEY }}
-          checkApiServers: ${{ secrets.CHECK_SERVERS_LIST }}
           runSchemaChecks: false
           runServiceChecks: true
           createPullRequest: true
 
   cache-cleanup:
     name: Cache Cleanup 🧹
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-22.04
     permissions:
       actions: write
     steps:
@@ -45,15 +40,6 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           : Remove Stale Ccache Caches
-
-          # The jq expressions below use multiple 'select' calls to filter
-          # each item in the array with the 'actions_caches' key.
-          # First it only selects objects whose 'ref' element has the value
-          # 'refs/heads/master', of those objects only those whose 'key'
-          # value matches the specified expression, before finally only
-          # selecting the 'id' and 'key' elements for a new object.
-          # The final 'join' command combines both elements with a semicolon
-          # into a raw string which can then be parsed directly.
 
           echo '::group::Processing master branch cache entries'
           while IFS=";" read -r cache_id cache_name; do
@@ -93,82 +79,21 @@ jobs:
           echo '::endgroup::'
 
   build-project:
-    name: Build 🧱
+    name: Build Project 🧱
     uses: ./.github/workflows/build-project.yaml
     needs: cache-cleanup
     secrets: inherit
-
-  analyze-project:
-    name: Analyze 🔬
-    uses: ./.github/workflows/analyze-project.yaml
-    needs: cache-cleanup
-    secrets: inherit
-    permissions:
-      security-events: write
-
-  upload-language-files:
-    name: Upload Language Files 🌐
-    if: github.repository_owner == 'obsproject' && github.ref_name == 'master'
-    runs-on: ubuntu-24.04
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          submodules: recursive
-          fetch-depth: 0
-
-      - name: Check Nightly Runs ☑️
-        id: nightly-checks
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          : Check Nightly Runs ☑️
-          if [[ "${RUNNER_DEBUG}" ]]; then set -x; fi
-
-          # This 'gh' command retrieves the last 2 runs of the workflow defined
-          # by 'scheduled.yaml' and retrieves just the 'headSha' value of the
-          # JSON response payload.
-          #
-          # As this job runs in context of the same workflow, the first element
-          # of the workflow list will be the currently active run.
-          #
-          # The jq expression then selects the 'headSha' element of the second
-          # element in the array, which is the SHA-1 hash of the commit used
-          # for the immediately prior run of this workflow.
-
-          last_nightly=$(gh run list --workflow scheduled.yaml --limit 2 --json headSha --jq '.[1].headSha')
-
-          if [[ "${GITHUB_SHA}" == "${last_nightly}" ]]; then
-            echo "passed=false" >> $GITHUB_OUTPUT
-          else
-            echo "passed=true" >> $GITHUB_OUTPUT
-            echo "lastNightly=${last_nightly}" >> $GITHUB_OUTPUT
-          fi
-
-      - name: Check for Changed Files ✅
-        if: fromJSON(steps.nightly-checks.outputs.passed)
-        uses: ./.github/actions/check-changes
-        id: checks
-        with:
-          baseRef: ${{ steps.nightly-checks.outputs.lastNightly }}
-          checkGlob: '**/en-US.ini'
-
-      - name: Upload US English Language Files 🇺🇸
-        if: steps.checks.outcome == 'success' && fromJSON(steps.checks.outputs.hasChangedFiles)
-        uses: obsproject/obs-crowdin-sync/upload@6066f54d3615e39a228b6ccd1a9884953ba3ab05
-        env:
-          CROWDIN_PAT: ${{ secrets.CROWDIN_SYNC_CROWDIN_PAT }}
-          GITHUB_EVENT_BEFORE: ${{ steps.nightly-checks.outputs.lastNightly }}
 
   steam-upload:
     name: Upload Steam Builds 🚂
     needs: [build-project]
     if: github.repository_owner == 'obsproject'
-    runs-on: macos-15
+    runs-on: macos-13
     defaults:
       run:
         shell: zsh --no-rcs --errexit --pipefail {0}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v3
 
       - name: Check Nightly Runs ☑️
         id: checks
@@ -177,17 +102,6 @@ jobs:
         run: |
           : Check Nightly Runs ☑️
           if (( ${+RUNNER_DEBUG} )) setopt XTRACE
-
-          # This 'gh' command retrieves the last 2 runs of the workflow defined
-          # by 'scheduled.yaml' and retrieves just the 'headSha' value of the
-          # JSON response payload.
-          #
-          # As this job runs in context of the same workflow, the first element
-          # of the workflow list will be the currently active run.
-          #
-          # The jq expression then selects the 'headSha' element of the second
-          # element in the array, which is the SHA-1 hash of the commit used
-          # for the immediately prior run of this workflow.
 
           local last_nightly=$(gh run list --workflow scheduled.yaml --limit 2 --json headSha --jq '.[1].headSha')
 

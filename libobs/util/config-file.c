@@ -87,6 +87,19 @@ config_t *config_create(const char *file)
 	return config;
 }
 
+static inline void remove_ref_whitespace(struct strref *ref)
+{
+	if (ref->array) {
+		while (ref->len && is_whitespace(*ref->array)) {
+			ref->array++;
+			ref->len--;
+		}
+
+		while (ref->len && is_whitespace(ref->array[ref->len - 1]))
+			ref->len--;
+	}
+}
+
 static bool config_parse_string(struct lexer *lex, struct strref *ref, char end)
 {
 	bool success = end != 0;
@@ -144,7 +157,8 @@ static void unescape(struct dstr *str)
 		*write = '\0';
 }
 
-static void config_add_item(struct config_item **items, struct strref *name, struct strref *value)
+static void config_add_item(struct config_item **items, struct strref *name,
+			    struct strref *value)
 {
 	struct config_item *item;
 	struct dstr item_value;
@@ -164,7 +178,8 @@ static void config_add_item(struct config_item **items, struct strref *name, str
 	HASH_ADD_STR(*items, name, item);
 }
 
-static void config_parse_section(struct config_section *section, struct lexer *lex)
+static void config_parse_section(struct config_section *section,
+				 struct lexer *lex)
 {
 	struct base_token token;
 
@@ -179,7 +194,9 @@ static void config_parse_section(struct config_section *section, struct lexer *l
 		if (token.type == BASETOKEN_OTHER) {
 			if (*token.text.array == '#') {
 				do {
-					if (!lexer_getbasetoken(lex, &token, PARSE_WHITESPACE))
+					if (!lexer_getbasetoken(
+						    lex, &token,
+						    PARSE_WHITESPACE))
 						return;
 				} while (!is_newline(*token.text.array));
 
@@ -200,7 +217,8 @@ static void config_parse_section(struct config_section *section, struct lexer *l
 	}
 }
 
-static void parse_config_data(struct config_section **sections, struct lexer *lex)
+static void parse_config_data(struct config_section **sections,
+			      struct lexer *lex)
 {
 	struct strref section_name;
 	struct base_token token;
@@ -217,7 +235,8 @@ static void parse_config_data(struct config_section **sections, struct lexer *le
 
 		if (*token.text.array != '[') {
 			while (!is_newline(*token.text.array)) {
-				if (!lexer_getbasetoken(lex, &token, PARSE_WHITESPACE))
+				if (!lexer_getbasetoken(lex, &token,
+							PARSE_WHITESPACE))
 					return;
 			}
 
@@ -238,7 +257,8 @@ static void parse_config_data(struct config_section **sections, struct lexer *le
 	}
 }
 
-static int config_parse_file(struct config_section **sections, const char *file, bool always_open)
+static int config_parse_file(struct config_section **sections, const char *file,
+			     bool always_open)
 {
 	char *file_data;
 	struct lexer lex;
@@ -265,7 +285,8 @@ static int config_parse_file(struct config_section **sections, const char *file,
 	return CONFIG_SUCCESS;
 }
 
-int config_open(config_t **config, const char *file, enum config_open_type open_type)
+int config_open(config_t **config, const char *file,
+		enum config_open_type open_type)
 {
 	int errorcode;
 	bool always_open = open_type == CONFIG_OPEN_ALWAYS;
@@ -395,7 +416,8 @@ cleanup:
 	return ret;
 }
 
-int config_save_safe(config_t *config, const char *temp_ext, const char *backup_ext)
+int config_save_safe(config_t *config, const char *temp_ext,
+		     const char *backup_ext)
 {
 	struct dstr temp_file = {0};
 	struct dstr backup_file = {0};
@@ -495,8 +517,9 @@ unlock:
 	return name;
 }
 
-static const struct config_item *config_find_item(const struct config_section *sections, const char *section,
-						  const char *name)
+static const struct config_item *
+config_find_item(const struct config_section *sections, const char *section,
+		 const char *name)
 {
 	struct config_section *sec;
 	struct config_item *res;
@@ -510,8 +533,8 @@ static const struct config_item *config_find_item(const struct config_section *s
 	return res;
 }
 
-static void config_set_item(config_t *config, struct config_section **sections, const char *section, const char *name,
-			    char *value)
+static void config_set_item(config_t *config, struct config_section **sections,
+			    const char *section, const char *name, char *value)
 {
 	struct config_section *sec;
 	struct config_item *item;
@@ -541,22 +564,27 @@ static void config_set_item(config_t *config, struct config_section **sections, 
 	pthread_mutex_unlock(&config->mutex);
 }
 
-static void config_set_item_default(config_t *config, const char *section, const char *name, char *value)
+static void config_set_item_default(config_t *config, const char *section,
+				    const char *name, char *value)
 {
 	config_set_item(config, &config->defaults, section, name, value);
 
 	if (!config_has_user_value(config, section, name))
-		config_set_item(config, &config->sections, section, name, bstrdup(value));
+		config_set_item(config, &config->sections, section, name,
+				bstrdup(value));
 }
 
-void config_set_string(config_t *config, const char *section, const char *name, const char *value)
+void config_set_string(config_t *config, const char *section, const char *name,
+		       const char *value)
 {
 	if (!value)
 		value = "";
-	config_set_item(config, &config->sections, section, name, bstrdup(value));
+	config_set_item(config, &config->sections, section, name,
+			bstrdup(value));
 }
 
-void config_set_int(config_t *config, const char *section, const char *name, int64_t value)
+void config_set_int(config_t *config, const char *section, const char *name,
+		    int64_t value)
 {
 	struct dstr str;
 	dstr_init(&str);
@@ -564,7 +592,8 @@ void config_set_int(config_t *config, const char *section, const char *name, int
 	config_set_item(config, &config->sections, section, name, str.array);
 }
 
-void config_set_uint(config_t *config, const char *section, const char *name, uint64_t value)
+void config_set_uint(config_t *config, const char *section, const char *name,
+		     uint64_t value)
 {
 	struct dstr str;
 	dstr_init(&str);
@@ -572,27 +601,31 @@ void config_set_uint(config_t *config, const char *section, const char *name, ui
 	config_set_item(config, &config->sections, section, name, str.array);
 }
 
-void config_set_bool(config_t *config, const char *section, const char *name, bool value)
+void config_set_bool(config_t *config, const char *section, const char *name,
+		     bool value)
 {
 	char *str = bstrdup(value ? "true" : "false");
 	config_set_item(config, &config->sections, section, name, str);
 }
 
-void config_set_double(config_t *config, const char *section, const char *name, double value)
+void config_set_double(config_t *config, const char *section, const char *name,
+		       double value)
 {
 	char *str = bzalloc(64);
 	os_dtostr(value, str, 64);
 	config_set_item(config, &config->sections, section, name, str);
 }
 
-void config_set_default_string(config_t *config, const char *section, const char *name, const char *value)
+void config_set_default_string(config_t *config, const char *section,
+			       const char *name, const char *value)
 {
 	if (!value)
 		value = "";
 	config_set_item_default(config, section, name, bstrdup(value));
 }
 
-void config_set_default_int(config_t *config, const char *section, const char *name, int64_t value)
+void config_set_default_int(config_t *config, const char *section,
+			    const char *name, int64_t value)
 {
 	struct dstr str;
 	dstr_init(&str);
@@ -600,7 +633,8 @@ void config_set_default_int(config_t *config, const char *section, const char *n
 	config_set_item_default(config, section, name, str.array);
 }
 
-void config_set_default_uint(config_t *config, const char *section, const char *name, uint64_t value)
+void config_set_default_uint(config_t *config, const char *section,
+			     const char *name, uint64_t value)
 {
 	struct dstr str;
 	dstr_init(&str);
@@ -608,13 +642,15 @@ void config_set_default_uint(config_t *config, const char *section, const char *
 	config_set_item_default(config, section, name, str.array);
 }
 
-void config_set_default_bool(config_t *config, const char *section, const char *name, bool value)
+void config_set_default_bool(config_t *config, const char *section,
+			     const char *name, bool value)
 {
 	char *str = bstrdup(value ? "true" : "false");
 	config_set_item_default(config, section, name, str);
 }
 
-void config_set_default_double(config_t *config, const char *section, const char *name, double value)
+void config_set_default_double(config_t *config, const char *section,
+			       const char *name, double value)
 {
 	struct dstr str;
 	dstr_init(&str);
@@ -622,7 +658,8 @@ void config_set_default_double(config_t *config, const char *section, const char
 	config_set_item_default(config, section, name, str.array);
 }
 
-const char *config_get_string(config_t *config, const char *section, const char *name)
+const char *config_get_string(config_t *config, const char *section,
+			      const char *name)
 {
 	const struct config_item *item;
 	const char *value = NULL;
@@ -670,7 +707,8 @@ int64_t config_get_int(config_t *config, const char *section, const char *name)
 	return 0;
 }
 
-uint64_t config_get_uint(config_t *config, const char *section, const char *name)
+uint64_t config_get_uint(config_t *config, const char *section,
+			 const char *name)
 {
 	const char *value = config_get_string(config, section, name);
 	if (value)
@@ -688,7 +726,8 @@ bool config_get_bool(config_t *config, const char *section, const char *name)
 	return false;
 }
 
-double config_get_double(config_t *config, const char *section, const char *name)
+double config_get_double(config_t *config, const char *section,
+			 const char *name)
 {
 	const char *value = config_get_string(config, section, name);
 	if (value)
@@ -697,7 +736,8 @@ double config_get_double(config_t *config, const char *section, const char *name
 	return 0.0;
 }
 
-bool config_remove_value(config_t *config, const char *section, const char *name)
+bool config_remove_value(config_t *config, const char *section,
+			 const char *name)
 {
 	struct config_section *sec;
 	struct config_item *item;
@@ -719,7 +759,8 @@ bool config_remove_value(config_t *config, const char *section, const char *name
 	return success;
 }
 
-const char *config_get_default_string(config_t *config, const char *section, const char *name)
+const char *config_get_default_string(config_t *config, const char *section,
+				      const char *name)
 {
 	const struct config_item *item;
 	const char *value = NULL;
@@ -734,7 +775,8 @@ const char *config_get_default_string(config_t *config, const char *section, con
 	return value;
 }
 
-int64_t config_get_default_int(config_t *config, const char *section, const char *name)
+int64_t config_get_default_int(config_t *config, const char *section,
+			       const char *name)
 {
 	const char *value = config_get_default_string(config, section, name);
 	if (value)
@@ -743,7 +785,8 @@ int64_t config_get_default_int(config_t *config, const char *section, const char
 	return 0;
 }
 
-uint64_t config_get_default_uint(config_t *config, const char *section, const char *name)
+uint64_t config_get_default_uint(config_t *config, const char *section,
+				 const char *name)
 {
 	const char *value = config_get_default_string(config, section, name);
 	if (value)
@@ -752,7 +795,8 @@ uint64_t config_get_default_uint(config_t *config, const char *section, const ch
 	return 0;
 }
 
-bool config_get_default_bool(config_t *config, const char *section, const char *name)
+bool config_get_default_bool(config_t *config, const char *section,
+			     const char *name)
 {
 	const char *value = config_get_default_string(config, section, name);
 	if (value)
@@ -761,7 +805,8 @@ bool config_get_default_bool(config_t *config, const char *section, const char *
 	return false;
 }
 
-double config_get_default_double(config_t *config, const char *section, const char *name)
+double config_get_default_double(config_t *config, const char *section,
+				 const char *name)
 {
 	const char *value = config_get_default_string(config, section, name);
 	if (value)
@@ -770,7 +815,8 @@ double config_get_default_double(config_t *config, const char *section, const ch
 	return 0.0;
 }
 
-bool config_has_user_value(config_t *config, const char *section, const char *name)
+bool config_has_user_value(config_t *config, const char *section,
+			   const char *name)
 {
 	bool success;
 	pthread_mutex_lock(&config->mutex);
@@ -779,7 +825,8 @@ bool config_has_user_value(config_t *config, const char *section, const char *na
 	return success;
 }
 
-bool config_has_default_value(config_t *config, const char *section, const char *name)
+bool config_has_default_value(config_t *config, const char *section,
+			      const char *name)
 {
 	bool success;
 	pthread_mutex_lock(&config->mutex);

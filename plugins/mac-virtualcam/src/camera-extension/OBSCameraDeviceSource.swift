@@ -23,8 +23,7 @@ class OBSCameraDeviceSource: NSObject, CMIOExtensionDeviceSource {
     private var _streamingCounter: UInt32 = 0
     private var _streamingSinkCounter: UInt32 = 0
 
-    private var _placeholderTimer: DispatchSourceTimer?
-    private var _consumeBufferTimer: DispatchSourceTimer?
+    private var _timer: DispatchSourceTimer?
 
     private let _timerQueue = DispatchQueue(
         label: "timerQueue",
@@ -53,7 +52,7 @@ class OBSCameraDeviceSource: NSObject, CMIOExtensionDeviceSource {
         let dimensions = CMVideoDimensions(width: 1920, height: 1080)
         CMVideoFormatDescriptionCreate(
             allocator: kCFAllocatorDefault,
-            codecType: kCVPixelFormatType_32BGRA,
+            codecType: kCVPixelFormatType_32ARGB,
             width: dimensions.width,
             height: dimensions.height,
             extensions: nil,
@@ -138,15 +137,15 @@ class OBSCameraDeviceSource: NSObject, CMIOExtensionDeviceSource {
 
         _streamingCounter += 1
 
-        _placeholderTimer = DispatchSource.makeTimerSource(flags: .strict, queue: _timerQueue)
+        _timer = DispatchSource.makeTimerSource(flags: .strict, queue: _timerQueue)
 
-        _placeholderTimer!.schedule(
+        _timer!.schedule(
             deadline: .now(),
-            repeating: 1.0 / Double(OBSCameraFrameRate),
+            repeating: Double(1 / OBSCameraFrameRate),
             leeway: .seconds(0)
         )
 
-        _placeholderTimer!.setEventHandler {
+        _timer!.setEventHandler {
             if self.sinkStarted {
                 return
             }
@@ -180,7 +179,7 @@ class OBSCameraDeviceSource: NSObject, CMIOExtensionDeviceSource {
                     bitsPerComponent: 8,
                     bytesPerRow: rowBytes,
                     space: CGColorSpaceCreateDeviceRGB(),
-                    bitmapInfo: CGImageAlphaInfo.noneSkipFirst.rawValue | CGBitmapInfo.byteOrder32Little.rawValue
+                    bitmapInfo: CGImageAlphaInfo.premultipliedFirst.rawValue
                 )!
                 let graphicsContext = NSGraphicsContext(cgContext: cgContext, flipped: false)
 
@@ -218,9 +217,9 @@ class OBSCameraDeviceSource: NSObject, CMIOExtensionDeviceSource {
                 }
             }
         }
-        _placeholderTimer!.setCancelHandler {}
+        _timer!.setCancelHandler {}
 
-        _placeholderTimer!.resume()
+        _timer!.resume()
     }
 
     func stopStreaming() {
@@ -229,9 +228,9 @@ class OBSCameraDeviceSource: NSObject, CMIOExtensionDeviceSource {
         } else {
             _streamingCounter = 0
 
-            if let timer = _placeholderTimer {
+            if let timer = _timer {
                 timer.cancel()
-                _placeholderTimer = nil
+                _timer = nil
             }
         }
     }
@@ -268,41 +267,22 @@ class OBSCameraDeviceSource: NSObject, CMIOExtensionDeviceSource {
 
                 self._streamSink.stream.notifyScheduledOutputChanged(output)
             }
+            self.consumeBuffer(client)
         }
     }
 
     func startStreamingSink(client: CMIOExtensionClient) {
         _streamingSinkCounter += 1
         self.sinkStarted = true
-
-        _consumeBufferTimer = DispatchSource.makeTimerSource(flags: .strict, queue: _timerQueue)
-
-        _consumeBufferTimer!.schedule(
-            deadline: .now(),
-            repeating: 1.0 / (Double(OBSCameraFrameRate) * 3.0),
-            leeway: .seconds(0)
-        )
-
-        _consumeBufferTimer!.setEventHandler {
-            self.consumeBuffer(client)
-        }
-
-        _consumeBufferTimer!.setCancelHandler {}
-
-        _consumeBufferTimer!.resume()
+        consumeBuffer(client)
     }
 
     func stopStreamingSink() {
         self.sinkStarted = false
-
         if _streamingCounter > 1 {
             _streamingSinkCounter -= 1
         } else {
             _streamingSinkCounter = 0
-            if let timer = _consumeBufferTimer {
-                timer.cancel()
-                _consumeBufferTimer = nil
-            }
         }
     }
 }

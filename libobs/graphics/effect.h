@@ -40,7 +40,13 @@ typedef DARRAY(struct pass_shaderparam) pass_shaderparam_array_t;
 
 /* ------------------------------------------------------------------------- */
 
-enum effect_section { EFFECT_PARAM, EFFECT_TECHNIQUE, EFFECT_SAMPLER, EFFECT_PASS, EFFECT_ANNOTATION };
+enum effect_section {
+	EFFECT_PARAM,
+	EFFECT_TECHNIQUE,
+	EFFECT_SAMPLER,
+	EFFECT_PASS,
+	EFFECT_ANNOTATION
+};
 
 /* ------------------------------------------------------------------------- */
 
@@ -82,7 +88,8 @@ static inline void effect_param_free(struct gs_effect_param *param)
 	da_free(param->annotations);
 }
 
-EXPORT void effect_param_parse_property(gs_eparam_t *param, const char *property);
+EXPORT void effect_param_parse_property(gs_eparam_t *param,
+					const char *property);
 
 /* ------------------------------------------------------------------------- */
 

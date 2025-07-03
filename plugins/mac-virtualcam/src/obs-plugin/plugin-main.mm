@@ -7,7 +7,6 @@
 
 OBS_DECLARE_MODULE()
 OBS_MODULE_USE_DEFAULT_LOCALE("mac-virtualcam", "en-US")
-
 MODULE_EXPORT const char *obs_module_description(void)
 {
     return "macOS virtual webcam output";
@@ -68,12 +67,15 @@ struct virtualcam_data {
                   actionForReplacingExtension:(nonnull OSSystemExtensionProperties *)existing
                                 withExtension:(nonnull OSSystemExtensionProperties *)ext
 {
-    NSString *infoString = [NSString
-        stringWithFormat:
-            @"mac-camera-extension: Replacement requested. Existing version: %@ (%@), new version: %@ (%@). Replacing...",
-            existing.bundleShortVersion, existing.bundleVersion, ext.bundleShortVersion, ext.bundleVersion];
-    blog(LOG_INFO, "%s", infoString.UTF8String);
-    return OSSystemExtensionReplacementActionReplace;
+    NSString *extVersion = [NSString stringWithFormat:@"%@.%@", [ext bundleShortVersion], [ext bundleVersion]];
+    NSString *existingVersion =
+        [NSString stringWithFormat:@"%@.%@", [existing bundleShortVersion], [existing bundleVersion]];
+
+    if ([extVersion compare:existingVersion options:NSNumericSearch] == NSOrderedDescending) {
+        return OSSystemExtensionReplacementActionReplace;
+    } else {
+        return OSSystemExtensionReplacementActionCancel;
+    }
 }
 
 - (void)request:(nonnull OSSystemExtensionRequest *)request didFailWithError:(nonnull NSError *)error
@@ -82,6 +84,10 @@ struct virtualcam_data {
     int severity;
 
     switch (error.code) {
+        case OSSystemExtensionErrorRequestCanceled:
+            errorMessage = @"macOS Camera Extension installation request cancelled.";
+            severity = LOG_INFO;
+            break;
         case OSSystemExtensionErrorUnsupportedParentBundleLocation:
             self.lastErrorMessage =
                 [NSString stringWithUTF8String:obs_module_text("Error.SystemExtension.WrongLocation")];
@@ -96,22 +102,13 @@ struct virtualcam_data {
             break;
     }
 
-    blog(severity, "mac-camera-extension: %s", errorMessage.UTF8String);
+    blog(severity, "mac-camera-extension error: %s", errorMessage.UTF8String);
 }
 
 - (void)request:(nonnull OSSystemExtensionRequest *)request didFinishWithResult:(OSSystemExtensionRequestResult)result
 {
-    switch (result) {
-        case OSSystemExtensionRequestCompleted:
-            self.installed = YES;
-            blog(LOG_INFO, "macOS Camera Extension activated successfully.");
-            break;
-        case OSSystemExtensionRequestWillCompleteAfterReboot:
-            self.lastErrorMessage =
-                [NSString stringWithUTF8String:obs_module_text("Error.SystemExtension.CompleteAfterReboot")];
-            blog(LOG_INFO, "macOS Camera Extension will activate after reboot.");
-            break;
-    }
+    self.installed = YES;
+    blog(LOG_INFO, "macOS Camera Extension activated successfully.");
 }
 
 - (void)requestNeedsUserApproval:(nonnull OSSystemExtensionRequest *)request
@@ -306,12 +303,7 @@ static bool virtualcam_output_start(void *data)
                                                delegate.lastErrorMessage]
                         .UTF8String);
             } else {
-                if (@available(macOS 15.0, *)) {
-                    obs_output_set_last_error(vcam->output,
-                                              obs_module_text("Error.SystemExtension.NotInstalled.MacOS15"));
-                } else {
-                    obs_output_set_last_error(vcam->output, obs_module_text("Error.SystemExtension.NotInstalled"));
-                }
+                obs_output_set_last_error(vcam->output, obs_module_text("Error.SystemExtension.NotInstalled"));
             }
 
             return false;
@@ -377,39 +369,33 @@ static bool virtualcam_output_start(void *data)
                                            .mScope = kCMIOObjectPropertyScopeGlobal,
                                            .mElement = kCMIOObjectPropertyElementMain};
         CMIOObjectGetPropertyDataSize(kCMIOObjectSystemObject, &address, 0, NULL, &size);
-        NSMutableData *cmioDevices = [NSMutableData dataWithLength:size];
-        void *device_data = [cmioDevices mutableBytes];
-        CMIOObjectGetPropertyData(kCMIOObjectSystemObject, &address, 0, NULL, size, &used, device_data);
+        size_t num_devices = size / sizeof(CMIOObjectID);
+        CMIOObjectID cmio_devices[num_devices];
+        CMIOObjectGetPropertyData(kCMIOObjectSystemObject, &address, 0, NULL, size, &used, &cmio_devices);
 
         vcam->deviceID = 0;
-        NSString *OBSVirtualCamUUIDString = [[NSBundle bundleWithIdentifier:@"com.obsproject.mac-virtualcam"]
+
+        NSString *OBSVirtualCamUUID = [[NSBundle bundleWithIdentifier:@"com.obsproject.mac-virtualcam"]
             objectForInfoDictionaryKey:@"OBSCameraDeviceUUID"];
-        CFUUIDRef OBSVirtualCamUUID =
-            CFUUIDCreateFromString(kCFAllocatorDefault, (CFStringRef) OBSVirtualCamUUIDString);
-
-        size_t num_elements = size / sizeof(CMIOObjectID);
-        for (size_t i = 0; i < num_elements; i++) {
-            CMIOObjectID cmioDevice;
-            [cmioDevices getBytes:&cmioDevice range:NSMakeRange(i * sizeof(CMIOObjectID), sizeof(CMIOObjectID))];
-
+        for (size_t i = 0; i < num_devices; i++) {
+            CMIOObjectID cmio_device = cmio_devices[i];
             address.mSelector = kCMIODevicePropertyDeviceUID;
-            UInt32 device_name_size;
-            CMIOObjectGetPropertyDataSize(cmioDevice, &address, 0, NULL, &device_name_size);
-            CFStringRef uid;
-            CMIOObjectGetPropertyData(cmioDevice, &address, 0, NULL, device_name_size, &used, &uid);
-            CFUUIDRef deviceUUID = CFUUIDCreateFromString(kCFAllocatorDefault, uid);
 
-            if (CFEqual(OBSVirtualCamUUID, deviceUUID)) {
-                vcam->deviceID = cmioDevice;
+            UInt32 device_name_size;
+            CMIOObjectGetPropertyDataSize(cmio_device, &address, 0, NULL, &device_name_size);
+
+            CFStringRef uid;
+            CMIOObjectGetPropertyData(cmio_device, &address, 0, NULL, device_name_size, &used, &uid);
+
+            const char *uid_string = CFStringGetCStringPtr(uid, kCFStringEncodingUTF8);
+            if (uid_string && strcmp(uid_string, OBSVirtualCamUUID.UTF8String) == 0) {
+                vcam->deviceID = cmio_device;
                 CFRelease(uid);
-                CFRelease(deviceUUID);
                 break;
             } else {
                 CFRelease(uid);
-                CFRelease(deviceUUID);
             }
         }
-        CFRelease(OBSVirtualCamUUID);
 
         if (!vcam->deviceID) {
             obs_output_set_last_error(vcam->output, obs_module_text("Error.SystemExtension.CameraUnavailable"));
@@ -418,15 +404,11 @@ static bool virtualcam_output_start(void *data)
 
         address.mSelector = kCMIODevicePropertyStreams;
         CMIOObjectGetPropertyDataSize(vcam->deviceID, &address, 0, NULL, &size);
-        NSMutableData *streamIds = [NSMutableData dataWithLength:size];
-        void *stream_data = [streamIds mutableBytes];
-        CMIOObjectGetPropertyData(vcam->deviceID, &address, 0, NULL, size, &used, stream_data);
+        CMIOStreamID stream_ids[(size / sizeof(CMIOStreamID))];
 
-        if (size < (2 * sizeof(CMIOStreamID))) {
-            obs_output_set_last_error(vcam->output, obs_module_text("Error.SystemExtension.CameraNotStarted"));
-            return false;
-        }
-        [streamIds getBytes:&vcam->streamID range:NSMakeRange(sizeof(CMIOStreamID), sizeof(CMIOStreamID))];
+        CMIOObjectGetPropertyData(vcam->deviceID, &address, 0, NULL, size, &used, &stream_ids);
+
+        vcam->streamID = stream_ids[1];
 
         CMIOStreamCopyBufferQueue(
             vcam->streamID, [](CMIOStreamID, void *, void *) {
@@ -562,6 +544,11 @@ struct obs_output_info virtualcam_output_info = {
 bool obs_module_load(void)
 {
     obs_register_output(&virtualcam_output_info);
+
+    obs_data_t *obs_settings = obs_data_create();
+    obs_data_set_bool(obs_settings, "vcamEnabled", true);
+    obs_apply_private_data(obs_settings);
+    obs_data_release(obs_settings);
 
     return true;
 }

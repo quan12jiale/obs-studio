@@ -45,7 +45,8 @@ static inline void do_log(int level, const char *msg, ...)
 	va_end(args);
 }
 
-static BOOL CALLBACK enum_monitor(HMONITOR handle, HDC hdc, LPRECT rect, LPARAM param)
+static BOOL CALLBACK enum_monitor(HMONITOR handle, HDC hdc, LPRECT rect,
+				  LPARAM param)
 {
 	struct monitor_info *monitor = (struct monitor_info *)param;
 
@@ -59,7 +60,8 @@ static BOOL CALLBACK enum_monitor(HMONITOR handle, HDC hdc, LPRECT rect, LPARAM 
 	return (monitor->desired_id > monitor->cur_id++);
 }
 
-static void update_monitor(struct monitor_capture *capture, obs_data_t *settings)
+static void update_monitor(struct monitor_capture *capture,
+			   obs_data_t *settings)
 {
 	struct monitor_info monitor = {0};
 	uint32_t width, height;
@@ -72,11 +74,13 @@ static void update_monitor(struct monitor_capture *capture, obs_data_t *settings
 	width = monitor.rect.right - monitor.rect.left;
 	height = monitor.rect.bottom - monitor.rect.top;
 
-	dc_capture_init(&capture->data, monitor.rect.left, monitor.rect.top, width, height, capture->capture_cursor,
+	dc_capture_init(&capture->data, monitor.rect.left, monitor.rect.top,
+			width, height, capture->capture_cursor,
 			capture->compatibility);
 }
 
-static inline void update_settings(struct monitor_capture *capture, obs_data_t *settings)
+static inline void update_settings(struct monitor_capture *capture,
+				   obs_data_t *settings)
 {
 	capture->monitor = (int)obs_data_get_int(settings, "monitor");
 	capture->capture_cursor = obs_data_get_bool(settings, "capture_cursor");
@@ -147,7 +151,8 @@ static void monitor_capture_tick(void *data, float seconds)
 static void monitor_capture_render(void *data, gs_effect_t *effect)
 {
 	struct monitor_capture *capture = data;
-	dc_capture_render(&capture->data, obs_source_get_texcoords_centered(capture->source));
+	dc_capture_render(&capture->data,
+			  obs_source_get_texcoords_centered(capture->source));
 
 	UNUSED_PARAMETER(effect);
 }
@@ -164,7 +169,8 @@ static uint32_t monitor_capture_height(void *data)
 	return capture->data.height;
 }
 
-static BOOL CALLBACK enum_monitor_props(HMONITOR handle, HDC hdc, LPRECT rect, LPARAM param)
+static BOOL CALLBACK enum_monitor_props(HMONITOR handle, HDC hdc, LPRECT rect,
+					LPARAM param)
 {
 	UNUSED_PARAMETER(hdc);
 	UNUSED_PARAMETER(rect);
@@ -181,17 +187,21 @@ static BOOL CALLBACK enum_monitor_props(HMONITOR handle, HDC hdc, LPRECT rect, L
 	mi.cbSize = sizeof(mi);
 	GetMonitorInfo(handle, &mi);
 
-	dstr_catf(&resolution, "%dx%d @ %d,%d", mi.rcMonitor.right - mi.rcMonitor.left,
-		  mi.rcMonitor.bottom - mi.rcMonitor.top, mi.rcMonitor.left, mi.rcMonitor.top);
+	dstr_catf(&resolution, "%dx%d @ %d,%d",
+		  mi.rcMonitor.right - mi.rcMonitor.left,
+		  mi.rcMonitor.bottom - mi.rcMonitor.top, mi.rcMonitor.left,
+		  mi.rcMonitor.top);
 
 	dstr_copy(&format_string, "%s %d: %s");
 	if (mi.dwFlags == MONITORINFOF_PRIMARY) {
 		dstr_catf(&format_string, " (%s)", TEXT_PRIMARY_MONITOR);
 	}
 
-	dstr_catf(&monitor_desc, format_string.array, TEXT_MONITOR, monitor_id + 1, resolution.array);
+	dstr_catf(&monitor_desc, format_string.array, TEXT_MONITOR,
+		  monitor_id + 1, resolution.array);
 
-	obs_property_list_add_int(monitor_list, monitor_desc.array, (int)monitor_id);
+	obs_property_list_add_int(monitor_list, monitor_desc.array,
+				  (int)monitor_id);
 
 	dstr_free(&monitor_desc);
 	dstr_free(&resolution);
@@ -206,8 +216,9 @@ static obs_properties_t *monitor_capture_properties(void *unused)
 
 	obs_properties_t *props = obs_properties_create();
 
-	obs_property_t *monitors =
-		obs_properties_add_list(props, "monitor", TEXT_MONITOR, OBS_COMBO_TYPE_LIST, OBS_COMBO_FORMAT_INT);
+	obs_property_t *monitors = obs_properties_add_list(
+		props, "monitor", TEXT_MONITOR, OBS_COMBO_TYPE_LIST,
+		OBS_COMBO_FORMAT_INT);
 
 	obs_properties_add_bool(props, "compatibility", TEXT_COMPATIBILITY);
 	obs_properties_add_bool(props, "capture_cursor", TEXT_CAPTURE_CURSOR);
@@ -220,7 +231,8 @@ static obs_properties_t *monitor_capture_properties(void *unused)
 struct obs_source_info monitor_capture_info = {
 	.id = "monitor_capture",
 	.type = OBS_SOURCE_TYPE_INPUT,
-	.output_flags = OBS_SOURCE_VIDEO | OBS_SOURCE_CUSTOM_DRAW | OBS_SOURCE_DO_NOT_DUPLICATE | OBS_SOURCE_SRGB,
+	.output_flags = OBS_SOURCE_VIDEO | OBS_SOURCE_CUSTOM_DRAW |
+			OBS_SOURCE_DO_NOT_DUPLICATE | OBS_SOURCE_SRGB,
 	.get_name = monitor_capture_getname,
 	.create = monitor_capture_create,
 	.destroy = monitor_capture_destroy,

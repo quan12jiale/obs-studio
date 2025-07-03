@@ -14,5 +14,4 @@
 {
     return [self newSurface];
 }
-
 @end

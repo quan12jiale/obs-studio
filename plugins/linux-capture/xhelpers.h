@@ -60,7 +60,8 @@ int xinerama_screen_count(xcb_connection_t *xcb);
  *
  * @return < 0 on error
  */
-int xinerama_screen_geo(xcb_connection_t *xcb, int_fast32_t screen, int_fast32_t *x, int_fast32_t *y, int_fast32_t *w,
+int xinerama_screen_geo(xcb_connection_t *xcb, int_fast32_t screen,
+			int_fast32_t *x, int_fast32_t *y, int_fast32_t *w,
 			int_fast32_t *h);
 
 /**
@@ -91,7 +92,8 @@ int randr_screen_count(xcb_connection_t *xcb);
  *
  * @return < 0 on error
  */
-int randr_screen_geo(xcb_connection_t *xcb, int_fast32_t screen, int_fast32_t *x, int_fast32_t *y, int_fast32_t *w,
+int randr_screen_geo(xcb_connection_t *xcb, int_fast32_t screen,
+		     int_fast32_t *x, int_fast32_t *y, int_fast32_t *w,
 		     int_fast32_t *h, xcb_screen_t **rscreen, char **name);
 
 /**
@@ -106,7 +108,8 @@ int randr_screen_geo(xcb_connection_t *xcb, int_fast32_t screen, int_fast32_t *x
  *
  * @return < 0 on error
  */
-int x11_screen_geo(xcb_connection_t *xcb, int_fast32_t screen, int_fast32_t *w, int_fast32_t *h);
+int x11_screen_geo(xcb_connection_t *xcb, int_fast32_t screen, int_fast32_t *w,
+		   int_fast32_t *h);
 
 /**
  * Attach a shared memory segment to the X-Server
