@@ -127,12 +127,12 @@ static DXGI_FORMAT get_pixel_format(HWND window, HMONITOR monitor,
 
 struct winrt_capture {
 	HWND window;
-	BOOL client_area;
-	BOOL force_sdr;
+	BOOL client_area;// 是否勾选客户端区域。
+	BOOL force_sdr;// 是否勾选强制使用SDR。
 	HMONITOR monitor;
 	DXGI_FORMAT format;
 
-	bool capture_cursor;
+	bool capture_cursor;// 是否勾选显示鼠标指针
 	BOOL cursor_visible;
 
 	gs_texture_t *texture;
