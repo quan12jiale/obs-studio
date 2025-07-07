@@ -30,5 +30,6 @@ add_subdirectory(plugins)
 add_subdirectory(test/test-input)
 
 add_subdirectory(frontend)
+add_subdirectory(ModernGraphicsEngineGuide)
 
 message_configuration()

@@ -1,0 +1,11 @@
+qengine_add_target(QEngineCore
+    ENABLE_MOC
+    PUBLIC_DEPENDENCY   
+        Qt::Gui
+        Qt::GuiPrivate
+        Qt::Widgets
+        Qt::WidgetsPrivate
+        Qt::ShaderToolsPrivate
+        Qt::Multimedia
+        Qt::MultimediaPrivate
+)

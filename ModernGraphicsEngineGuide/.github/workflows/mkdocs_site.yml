@@ -1,0 +1,39 @@
+name: mkdocs_site
+on:
+  push:
+    branches:
+      - master 
+      - main
+permissions:
+  contents: write
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4.1.1
+        with: { fetch-depth: 0 }
+            
+      - uses: actions/setup-python@v4
+        with:
+          python-version: 3.x
+      - run: pip install mkdocs-material 
+      
+      - name: Install Python dependencies
+        run: |
+          pip install \
+            "cairosvg>=2.5" \
+            "jieba" \
+            "mkdocs-git-committers-plugin-2>=1.1.1" \
+            "mkdocs-git-revision-date-localized-plugin>=1.0" \
+            "mkdocs-minify-plugin>=0.3" \
+            "mkdocs-rss-plugin>=1.2" \
+            "mkdocs-redirects>=1.0" \
+            "mkdocs-glightbox" \
+            "pillow"
+            
+      - name: Deploy documentation
+        run: |
+          mkdocs gh-deploy --force
+          mkdocs --version
+
