@@ -65,13 +65,16 @@ void dc_capture_init(struct dc_capture *capture, int x, int y, uint32_t width, u
 		bih->biHeight = height;
 		bih->biPlanes = 1;
 
-		const HDC hdc = CreateCompatibleDC(NULL);
+		const HDC hdc = CreateCompatibleDC(NULL);// 创建一个兼容的设备上下文
 		if (hdc) {
+			// 使用 CreateDIBSection 创建一个 DIB（设备无关位图）并将其与 capture 结构体的 bits 字段关联。在dc_capture_release_dc函数中将capture->bits设置进纹理capture->texture中
+			// 在调用dc_capture_release_dc函数之前，调用BitBlt函数将hdc_target = GetDC(window)数据传输到capture->hdc上
 			const HBITMAP bmp =
 				CreateDIBSection(capture->hdc, &bi, DIB_RGB_COLORS, (void **)&capture->bits, NULL, 0);
 			if (bmp) {
 				capture->hdc = hdc;
 				capture->bmp = bmp;
+				// 将一个图形对象（如位图、画刷或区域）选入指定的设备上下文。该函数在执行时会替换设备上下文中同类型的原有对象，并返回被替换对象的句柄作为操作结果。
 				capture->old_bmp = SelectObject(capture->hdc, capture->bmp);
 			} else {
 				DeleteDC(hdc);
@@ -167,7 +170,7 @@ void dc_capture_capture(struct dc_capture *capture, HWND window)
 	}
 
 	hdc_target = GetDC(window);
-
+	// BitBlt（Bit Block Transfer）是Windows图形设备接口（GDI）中的核心函数，主要用于不同设备上下文间执行像素数据的位块传输
 	BitBlt(hdc, 0, 0, capture->width, capture->height, hdc_target, capture->x, capture->y, SRCCOPY);
 
 	ReleaseDC(NULL, hdc_target);

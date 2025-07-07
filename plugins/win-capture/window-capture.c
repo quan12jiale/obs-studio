@@ -79,34 +79,37 @@ struct window_capture {
 
 	pthread_mutex_t update_mutex;
 
-	char *title;
-	char *class;
-	char *executable;
-	enum window_capture_method method;
-	enum window_priority priority;
-	bool cursor;
-	bool compatibility;
-	bool client_area;
-	bool force_sdr;
+	char *title;// 窗口标题
+	char *class;// 窗口类名
+	char *executable;// 窗口exe名称
+	enum window_capture_method method;// 捕获方法枚举：AUTO、BITBLT、WGC
+	enum window_priority priority;// 查找窗口优先级：CLASS窗口类名、TITLE窗口标题、EXE窗口exe名称
+	bool cursor;// 是否勾选显示鼠标指针
+	bool compatibility;// 是否勾选多显示器的兼容性，影响dc_capture_init函数中是否调用CreateCompatibleDC。only availiable in BITBLT
+	bool client_area;// 是否勾选客户端区域。only availiable in WGC
+	bool force_sdr;// 是否勾选强制使用SDR。only availiable in WGC
 	bool hooked;
 	bool capture_audio;
 
-	struct dc_capture capture;
+	struct dc_capture capture;// 设备上下文采集结构字段
 
-	bool previously_failed;
-	void *winrt_module;
-	struct winrt_exports exports;
-	struct winrt_capture *capture_winrt;
+	bool previously_failed;// 针对一个捕获的窗口，只调用一次exports.winrt_capture_init_window导出函数创建winrt采集，上次失败字段为true，不重复调用。捕获窗口变更，会重新调用
+	void *winrt_module;// HMODULE h_library = LoadLibraryW(L"libobs-winrt");
+	struct winrt_exports exports;// libobs-winrt.dll中的导出函数
+	struct winrt_capture *capture_winrt;// exports.winrt_capture_init_window导出函数创建的winrt采集结构字段
 
-	float resize_timer;
-	float check_window_timer;
-	float cursor_check_time;
+	float resize_timer;// 如果是BITBLT捕获方式，每隔RESIZE_CHECK_TIME 0.2fs检查一下捕获的窗口大小是否变化，如果变化，重新调用dc_capture_init
+	float check_window_timer;// 当window为空指针，或者IsWindow(wc->window)为false时，每隔WC_CHECK_TIMER 1.0fs，调用一下ms_find_window
+	float cursor_check_time;// 每隔CURSOR_CHECK_TIME 0.2fs检查一下当前活动窗口与捕获的窗口是不是同一个进程。如果是BITBLT捕获方式，更新capture.cursor_hidden字段，控制是否调用draw_cursor;如果是WGC捕获方式，调用 winrt_capture_show_cursor 函数来更新光标的显示状态。
 
-	HWND window;
-	RECT last_rect;
+	HWND window;// 捕获的窗口句柄
+	RECT last_rect;// 与resize_timer搭配使用，检查捕获的窗口大小是否变化
 
+	/*如果 get_window_dpi_awareness_context 函数不为空，则调用它获取当前窗口的 DPI 感知上下文。
+	调用 set_thread_dpi_awareness_context 函数将当前线程的 DPI 感知上下文设置为窗口的上下文，并保存之前的上下文。
+	最后，如果之前保存的 DPI 感知上下文不为空，则将线程的 DPI 感知上下文恢复为之前的状态。*/
 	PFN_SetThreadDpiAwarenessContext set_thread_dpi_awareness_context;
-	PFN_GetThreadDpiAwarenessContext get_thread_dpi_awareness_context;
+	PFN_GetThreadDpiAwarenessContext get_thread_dpi_awareness_context;// not use
 	PFN_GetWindowDpiAwarenessContext get_window_dpi_awareness_context;
 };
 
