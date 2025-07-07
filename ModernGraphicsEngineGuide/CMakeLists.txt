@@ -42,6 +42,9 @@ function(add_example EXAMPLE_PATH)
       COMMAND
         "${CMAKE_COMMAND}" -E copy_if_different "$<TARGET_FILE:${EXAMPLE_NAME}>"
         "${OBS_OUTPUT_DIR}/$<CONFIG>/${OBS_EXECUTABLE_DESTINATION}"
+      COMMAND
+        "${CMAKE_COMMAND}" -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/Resources"
+        "${OBS_OUTPUT_DIR}/$<CONFIG>/${OBS_EXECUTABLE_DESTINATION}/Resources"
       COMMENT "Copy ${EXAMPLE_NAME} to binary directory"
       VERBATIM
     )
