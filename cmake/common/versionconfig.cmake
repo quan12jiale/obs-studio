@@ -5,6 +5,7 @@ include_guard(GLOBAL)
 set(_obs_version ${_obs_default_version})
 set(_obs_version_canonical ${_obs_default_version})
 
+set(OBS_VERSION_OVERRIDE "31.1.0-rc1-9-gd91ccdefd" CACHE STRING "Override OBS version")
 # Attempt to automatically discover expected OBS version
 if(NOT DEFINED OBS_VERSION_OVERRIDE AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/.git")
   execute_process(
