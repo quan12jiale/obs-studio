@@ -8,6 +8,7 @@ static float VertexData[] = {										//顶点数据
 	-0.5f,   0.5f,		0.0f, 1.0f, 0.0f, 1.0f,
 	 0.5f,   0.5f,		0.0f, 0.0f, 1.0f, 1.0f,
 };
+static const int ncols = 6;
 
 class TriangleWindow : public QRhiWindow {
 private:
@@ -16,16 +17,22 @@ private:
 	QScopedPointer<QRhiBuffer> mVertexBuffer;						//顶点缓冲区
 	QScopedPointer<QRhiShaderResourceBindings> mShaderBindings;		//描述符集布局绑定
 	QScopedPointer<QRhiGraphicsPipeline> mPipeline;					//图形渲染管线
+	// test:2、绘制矩形，圆形或者其他多边形图像。
+	QVector<float> vertex_data_;
+
 public:
 	TriangleWindow(QRhiHelper::InitParams inInitParams) 
 		: QRhiWindow(inInitParams) {
 		mSigInit.request();			//请求初始化
 		mSigSubmit.request();		//请求提交资源
+		setupCircle();
 	}
 protected:
 	virtual void onRenderTick() override {
 		if (mSigInit.ensure()) {	//初始化资源
 			mVertexBuffer.reset(mRhi->newBuffer(QRhiBuffer::Immutable, QRhiBuffer::VertexBuffer, sizeof(VertexData)));
+			//mVertexBuffer.reset(mRhi->newBuffer(QRhiBuffer::Immutable, QRhiBuffer::VertexBuffer,
+							    //vertex_data_.size() * static_cast<quint32>(sizeof(float))));
 			mVertexBuffer->create();
 			QRhiVertexInputLayout inputLayout;
 			inputLayout.setBindings({
@@ -77,7 +84,10 @@ protected:
 				QRhiShaderStage(QRhiShaderStage::Vertex, vs),
 				QRhiShaderStage(QRhiShaderStage::Fragment, fs)
 			});
-
+			// qrhid3d11.cpp文件toD3DTopology函数将QRhiGraphicsPipeline::Topology枚举映射为D3D11_PRIMITIVE_TOPOLOGY枚举
+			// D3D不支持QRhiGraphicsPipeline::Topology::TriangleFan枚举
+			// test:1、修改 图元 拓扑，绘制点，线。
+			//mPipeline->setTopology(QRhiGraphicsPipeline::Topology::Triangles);
 			mPipeline->create();
 		}
 
@@ -87,6 +97,7 @@ protected:
 		if (mSigSubmit.ensure()) {
 			QRhiResourceUpdateBatch* batch = mRhi->nextResourceUpdateBatch();		//申请资源操作合批入口
 			batch->uploadStaticBuffer(mVertexBuffer.get(), VertexData);				//上传顶点数据
+			//batch->uploadStaticBuffer(mVertexBuffer.get(), vertex_data_.data());
 			cmdBuffer->resourceUpdate(batch);
 		}
 
@@ -100,8 +111,48 @@ protected:
 		const QRhiCommandBuffer::VertexInput vertexInput(mVertexBuffer.get(), 0);	//将 mVertexBuffer 绑定到Buffer0，内存偏移值为0
 		cmdBuffer->setVertexInput(0, 1, &vertexInput);								
 		cmdBuffer->draw(3);															//执行绘制，其中 3 代表着有 3个顶点数据 输入
+		//cmdBuffer->draw(vertex_data_.size() / ncols);
 
 		cmdBuffer->endPass();														//结束渲染通道
+	}
+	void setupCircle() {
+		const int numSegments = 100; // 圆的细分数
+		const float radius = 1.0f;   // 圆的半径
+
+		for (int i = 0; i <= numSegments; ++i) {
+			float angle = 2.0f * M_PI * i / numSegments;
+			float x = radius * cos(angle);
+			float y = radius * sin(angle);
+
+			float next_angle = 2.0f * M_PI * (i+1) / numSegments;
+			float next_x = radius * cos(next_angle);
+			float next_y = radius * sin(next_angle);
+
+			vertex_data_.append(0.0f); // 中心点
+			vertex_data_.append(0.0f);
+
+			vertex_data_.push_back(1.0f); // r
+			vertex_data_.push_back(0.0f); // g
+			vertex_data_.push_back(0.0f); // b
+			vertex_data_.push_back(1.0f); // a
+
+			vertex_data_.push_back(x);
+			vertex_data_.push_back(y);
+
+			vertex_data_.push_back(1.0f); // r
+			vertex_data_.push_back(0.0f);           // g
+			vertex_data_.push_back(0.0f); // b
+			vertex_data_.push_back(1.0f);           // a
+
+			// TODO 其实这里可以用IndexBuffer，就不用生成重复的顶点数据
+			vertex_data_.push_back(next_x);
+			vertex_data_.push_back(next_y);
+
+			vertex_data_.push_back(1.0f); // r
+			vertex_data_.push_back(0.0f); // g
+			vertex_data_.push_back(0.0f); // b
+			vertex_data_.push_back(1.0f); // a
+		}
 	}
 };
 
